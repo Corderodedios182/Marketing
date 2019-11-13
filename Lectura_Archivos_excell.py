@@ -5,9 +5,17 @@ Created on Fri Oct 18 13:20:36 2019
 
 @author: carlos
 """
+
+###Paqueterias
+
 import os 
 import datetime
 import pandas as pd
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from gspread_dataframe import set_with_dataframe #,get_as_dataframe
+
+###Rutas
 
 os.getcwd()
 os.chdir('/home/carlos/Documentos/Adsocial/Sheets/')
@@ -16,25 +24,56 @@ os.listdir()
 ####
 #FB#
 ####
+
 os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Facebook')
 Archivos = os.listdir()
 
 #Leyendo todos los archivos e irlos guardando
 Union_FB = []
+filas = []
+archivo = []
+columnas = []
 
 for csv in Archivos:
+    
     tmp = pd.read_csv(csv, parse_dates = ['Inicio','Finalización','Inicio del informe','Fin del informe'])
     tmp['Marca'] = csv.split("-",1)[0]
+    tmp['Archivo'] = csv
+    
+    filas.append(tmp.shape[0])
+    columnas.append(tmp.shape[1])
+    archivo.append(csv)
     Union_FB.append(tmp)
 
 Union_FB = pd.concat(Union_FB)
-#Se agrupan por campaña y se respentan las fechas maximas de la diferencia Fin - Inicio
-#tmp = Union_FB[Union_FB.iloc[:,2] == '1910_OD _VENTA_MKT_NOCTURNA_2019']
 
-Union_FB = Union_FB.groupby(['Nombre de la campaña','Inicio','Finalización','Marca'], as_index = False).sum() 
+#Funcion para Informacion de los archivos
+def lists2dict(list1, list2):
+    """list1 devuelve las llaves y list2 los elementos"""
+
+    # Unimos con la funcion zip()
+    zipped_lists = zip(list1, list2)
+
+    # Lo volvemos diccionario
+    rs_dict = dict(zipped_lists)
+
+    return rs_dict
+
+Informacion = pd.DataFrame([lists2dict(['Archivo','columnas','filas'],sublista) for sublista in zip(archivo,columnas,filas)])
+del filas, columnas, archivo, csv, tmp, Archivos
+
+if Union_FB.shape[0] == Informacion.filas.sum():
+    print("La union Facebook es correcta el numero de filas por cada archivo corresponde al concatenado")
+else:
+    print("Hubo un error al concatenar Facebook")
+
+#Se agrupan por campaña y se respentan las fechas maximas de la diferencia Fin - Inicio
+#tmp = Union_FB[Union_FB.loc[:,'Archivo'] == 'Office-Depot-Campañas-1-nov-2018-30-nov-2018.csv']
+
+Union_FB = Union_FB.groupby(['Nombre de la campaña','Inicio','Finalización','Marca','Archivo'], as_index = False).sum()
 #tmp_1 = Union_FB[Union_FB.iloc[:,0] == '1910_OD _VENTA_MKT_NOCTURNA_2019']
 
-Union_FB.columns = ['Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Impresiones','Clics','dinero_gastado']
+Union_FB.columns = ['Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Archivo','Impresiones','Clics','dinero_gastado']
 Union_FB['Plataforma'] = 'Facebook'
 
 #Colocación de Marcas
@@ -49,16 +88,25 @@ Union_FB.loc[(Union_FB.Nombre_Campaña.str.contains('CAM')) & (Union_FB.Nombre_C
 Union_FB.Fecha_inicio = Union_FB.Fecha_inicio.apply(lambda x: x.date())
 Union_FB.Fecha_Fin = Union_FB.Fecha_Fin.apply(lambda x: x.date())
 
+Informacion = pd.merge(Informacion,Union_FB.groupby(['Archivo'], as_index = False).sum(),how = 'left', on = 'Archivo')
+
+####Validaciones para las fechas agrupaciones por Mes
+#a = Union_FB.Nombre_Campaña.value_counts()
+#b = Union_FB[Union_FB.Nombre_Campaña == '1811_PETCO_Fulltrust_FB']
+
 #########
 #Adwords#
 #########
+
 os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Adwords')
 Archivos = os.listdir()
 
 Union_Ad = []
 
+a = pd.read_csv(Archivos[1], sep = '\t', skiprows = 2) 
+
 for csv in Archivos:
-    tmp = pd.read_csv(csv, skiprows = 2, parse_dates = ['Fecha de inicio','Fecha de finalización'])
+    tmp = pd.read_csv(csv , sep='\t') 
     Union_Ad.append(tmp)
 
 Union_Ad = pd.concat(Union_Ad).reset_index(drop = True)
@@ -77,30 +125,46 @@ Union_Ad.loc[(Union_Ad.Marca.str.contains('Office') | Union_Ad.Marca.str.contain
 Union_Ad.loc[Union_Ad.Marca.str.contains('Petco'),'Marca'] = 'Petco'
 Union_Ad.loc[Union_Ad.Marca.str.contains('RS'), 'Marca'] = 'Radioshack'
 
-########
-#Adform#
-########
-os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Adform')
+#########################
+#Adform/Sizmek (display)#
+#########################
+
+os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Adform/Bitácoras AdOps')
 Archivos = os.listdir()
 
-Union_Adf = []
+#Archivos = Archivos[:5]
 
-for csv in Archivos:
-    tmp = pd.read_csv(csv, skiprows = 1)
-    tmp = tmp.iloc[:-2,:]
-    Union_Adf.append(tmp)
+columnas = []
+
+for data in Archivos:
+    xls = pd.ExcelFile(data) #Conexion con el archivo
+    base = pd.read_excel(xls, sheet_name = 'GENERAL', skiprows = 1) #Lectura del arhivo
+    try:
+        tmp = [i for i, x in enumerate(base.iloc[:,0] == 'Total') if x][0] #Si non tengo el total informo el archivo
+    except IndexError:
+        print(data)
+    
+    columnas.append(base.keys())
+    #base.loc[:,('Campaña','Fecha Inicio','Fecha Fin','Marca','KPI Entregado Adform','Clics Adform','$$ Planeada MXN','Plataforma')]
+
+tmp = pd.DataFrame(columnas)
 
 #Puede existir diferencias en las columnas, revisar por si las dudas
-#tmp_f = []
+Union_FB = []
+filas = []
+archivo = []
+columnas = []
 
-#for csv in Archivos:
-#    tmp = pd.read_csv(csv, skiprows = 1,parse_dates = ['Fecha Inicio','Fecha Fin'])
-#    tmp = tmp.iloc[:-2,:]
-#    tmp = tmp.keys()
-#    tmp_f.append(tmp)
+for csv in Archivos:
+    tmp = pd.read_csv(csv, parse_dates = ['Inicio','Finalización','Inicio del informe','Fin del informe'])
+    tmp['Marca'] = csv.split("-",1)[0]
+    tmp['Archivo'] = csv
+    filas.append(tmp.shape[0])
+    columnas.append(tmp.shape[1])
+    archivo.append(csv)
+    Union_FB.append(tmp)
 
-#tmp_f = pd.DataFrame(tmp_f)
-
+Union_FB = pd.concat(Union_FB)
 Union_Adf = pd.concat(Union_Adf).reset_index(drop = True)
 Union_Adf['Plataforma'] = 'Adform'
 #Antes de septiembre tomo impresiones de SAS
@@ -147,74 +211,118 @@ Base_master.to_csv('Base_master.csv')
 print("Adwords : " + str(Union_Ad.shape)) ; print("Adform : " + str(Union_Adf.shape)) ; print("Facebook : " + str(Union_FB.shape)) ; print("Total : " + str(Union_Ad.shape[0] + Union_Adf.shape[0] + Union_FB.shape[0]))
 del Union_Ad, Union_Adf, Union_FB,tmp
 
+####################################################FIN ARCHIVOS CAMPAÑAS###########################################################
+
 ###########
 #Analytics#
 ###########
-os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/Office Depot')
-Archivos = pd.Series(os.listdir())
 
-#Conversiones Asistidas
-tmp_conversiones = list(Archivos[Archivos.str.contains('Conver')])
-tmp_conversiones = pd.read_csv(tmp_conversiones[0], skiprows = 6)
-tmp_conversiones = tmp_conversiones.loc[:,('Fuente/Medio','Campaña','Conversiones asistidas','Valor de las conversiones asistidas')]
-tmp_conversiones.columns = ['Fuente_Medio','Nombre_Campaña','Conversiones','Revenue']
-tmp_conversiones = tmp_conversiones.iloc[:-3,:]
-tmp_conversiones['Tipo'] = 'Asistida'
+Todo_Analytics = []
 
-tmp_conversiones.Conversiones = tmp_conversiones.Conversiones.astype('int')
+#Este for va entrando en cada carpeta para solo trabajar con los arhivos de cada Marca
+for Analytics in os.listdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/'):
+    
+    os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/' + str(Analytics))
+    Archivos = pd.Series(os.listdir())
+    
+    #Conversiones Asistidas
+    tmp_conversiones = list(Archivos[Archivos.str.contains('Conver')])
 
-tmp_conversiones.Revenue = tmp_conversiones.Revenue.apply(lambda x : str(x).replace('.',''))
-tmp_conversiones.Revenue = tmp_conversiones.Revenue.apply(lambda x : str(x).replace(',','.'))
-tmp_conversiones.Revenue = tmp_conversiones.Revenue.apply(lambda x : str(x).replace('MXN','')).astype('float')
+    Union_conversiones = []
+    
+    #Trabaja solo los archivos de conversiones
+    for csv in tmp_conversiones:
+        tmp = pd.read_csv(csv, skiprows = 6)
+        tmp = tmp.iloc[:-3,:]
+        tmp['archivo'] = csv
+        Union_conversiones.append(tmp)
 
-#Conversiones todo el trafico
-tmp_trafico = list(Archivos[Archivos.str.contains('Todo el ')])
-xls = pd.ExcelFile(tmp_trafico[0])
-tmp_trafico = pd.read_excel(xls, 'Conjunto de datos1')
-tmp_trafico = tmp_trafico.loc[:,('Fuente/Medio','Campaña','Transacciones','Ingresos')]
-tmp_trafico.columns = ['Fuente_Medio','Nombre_Campaña','Conversiones','Revenue']
-tmp_trafico['Tipo'] = 'Directa'
-tmp_trafico = tmp_trafico.iloc[:-1,:]
+    Union_conversiones = pd.concat(Union_conversiones)
 
-tmp_trafico.Conversiones = tmp_trafico.Conversiones.astype('int')
+    Union_conversiones = Union_conversiones.loc[:,('archivo','Fuente/Medio','Campaña','Conversiones asistidas','Valor de las conversiones asistidas')]
+    Union_conversiones.columns = ['archivo','Fuente_Medio','Nombre_Campaña','Conversiones','Revenue']
 
-#Union de los 2 tmp
-Union_Analytics = pd.concat([tmp_conversiones,tmp_trafico])
-Union_Analytics['Marca'] = 'Office Depot MEX'
-del tmp_conversiones, tmp_trafico
+    Union_conversiones['Tipo'] = 'Asistida'
+
+    Union_conversiones.Conversiones = Union_conversiones.Conversiones.astype('int')
+
+    Union_conversiones.Revenue = Union_conversiones.Revenue.apply(lambda x : str(x).replace('.',''))
+    Union_conversiones.Revenue = Union_conversiones.Revenue.apply(lambda x : str(x).replace(',','.'))
+    Union_conversiones.Revenue = Union_conversiones.Revenue.apply(lambda x : str(x).replace('MXN','')).astype('float')
+
+    #Conversiones todo el trafico
+    tmp_trafico = list(Archivos[Archivos.str.contains('Todo el ')])
+
+    Union_trafico = []
+
+    #Trabaja los archivos de trafico al sitio
+    for xls in tmp_trafico:
+        tmp = pd.ExcelFile(xls)
+        tmp = pd.read_excel(tmp, 'Conjunto de datos1')
+        tmp = tmp.iloc[:-1,:]
+        tmp['archivo'] = xls
+        Union_trafico.append(tmp)
+
+    Union_trafico = pd.concat(Union_trafico)
+
+    Union_trafico = Union_trafico.loc[:,('archivo','Fuente/Medio','Campaña','Transacciones','Ingresos')]
+    Union_trafico.columns = ['archivo','Fuente_Medio','Nombre_Campaña','Conversiones','Revenue']
+    Union_trafico['Tipo'] = 'Directa'
+
+    Union_trafico.Conversiones = Union_trafico.Conversiones.astype('int')
+    
+    #Union de los 2 tmp
+    Union_Analytics = pd.concat([Union_conversiones,Union_trafico])
+    Union_Analytics['Marca'] = Analytics
+    
+    #Una vez que tenemos todos los archivos de cada Marca los almacenamos en un archivo final
+    Todo_Analytics.append(Union_Analytics)
+    del tmp_conversiones, tmp_trafico, csv, xls, tmp
+
+#Terminación del primer for
+Todo_Analytics = pd.concat(Todo_Analytics)
+
+#Trabajar las fechas para conocer el Mes
+
+
+
+####################################################FIN ANALYTICS#############################################################
+
 
 #filtro = Union_Analytics[Union_Analytics.Fuente_Medio == 'Adsocial_FB / ANUNCIO_HYPERX_02_AL_31_OCTUBRE']
 os.chdir('/home/carlos/Documentos/Adsocial/Sheets/')
 Union_Analytics.to_csv('Union_Analytics.csv')
 
-#Preguntas sobre Analytics
 
 #Cruzar con un reporte de producto
 
-#Api para poder leer de sheets, info de Adform
-import pandas as pd
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-
+#Conexion con Google Sheets, usando las paqueterias gspread, oauth2client, gspread_dataframe
+#Credenciales cred.json
 os.chdir('/home/carlos/Documentos/Adsocial')
 os.listdir()
-
+#Autentificacion con google cloud platform correo analytics.adsocial@gmail.com
 scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-
 creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
-
 client = gspread.authorize(creds)
 
-sh = client.open('Copy of DASHBOARD GG - Reporte ROAS MES A MES')
-worksheet = sh.get_worksheet(1)
+#Exportacion de la informacion
+sh = client.open('Copy of DASHBOARD GG - Reporte ROAS MES A MES') #Recordar que el archivo que deseamos leer tiene que tener el correo de la api como persona compartida
+worksheet = sh.get_worksheet(1) #Base_master_python
+set_with_dataframe(worksheet, Base_master)
+
+worksheet = sh.get_worksheet(2) #Union_Analytics_python
+set_with_dataframe(worksheet, Union_Analytics)
+
+#Extraccion de datos sheets
 datos = worksheet.get_all_values()
 datos = pd.DataFrame(datos)
 
-worksheet.insert_row(Base_master)
-####################
+#Extraccion con get_as_dataframe
+#df2 = get_as_dataframe(worksheet)
+#df = get_as_dataframe(worksheet, parse_dates=True, usecols=[0,2], skiprows=1, header=None)
 
-
-
+for i in Archivos:
+    print(i)
 
 
 
