@@ -4,6 +4,15 @@
 Created on Fri Oct 18 13:20:36 2019
 
 @author: carlos
+
+El siguiente script une la iformación de varias fuentes, al final crea 2 bases. bases_master, Todo_Analytics
+
+Facebook: Se descargan reportes mensuales por Marca de las plataformas
+Adwords: Solo se descarga un reporte al Mes KPI
+Adform: Se extraen de los sheets de los Operadores
+
+Analytics: Se divide el reporte por Conversiones y trafico por Marca
+
 """
 
 ###Paqueterias
@@ -59,10 +68,10 @@ def lists2dict(list1, list2):
 
     return rs_dict
 
-Informacion = pd.DataFrame([lists2dict(['Archivo','columnas','filas'],sublista) for sublista in zip(archivo,columnas,filas)])
+Informacion_Facebook = pd.DataFrame([lists2dict(['Archivo','columnas','filas'],sublista) for sublista in zip(archivo,columnas,filas)])
 del filas, columnas, archivo, csv, tmp, Archivos
 
-if Union_FB.shape[0] == Informacion.filas.sum():
+if Union_FB.shape[0] == Informacion_Facebook.filas.sum():
     print("La union Facebook es correcta el numero de filas por cada archivo corresponde al concatenado")
 else:
     print("Hubo un error al concatenar Facebook")
@@ -88,7 +97,7 @@ Union_FB.loc[(Union_FB.Nombre_Campaña.str.contains('CAM')) & (Union_FB.Nombre_C
 Union_FB.Fecha_inicio = Union_FB.Fecha_inicio.apply(lambda x: x.date())
 Union_FB.Fecha_Fin = Union_FB.Fecha_Fin.apply(lambda x: x.date())
 
-Informacion = pd.merge(Informacion,Union_FB.groupby(['Archivo'], as_index = False).sum(),how = 'left', on = 'Archivo')
+Informacion_Facebook = pd.merge(Informacion_Facebook,Union_FB.groupby(['Archivo'], as_index = False).sum(),how = 'left', on = 'Archivo')
 
 ####Validaciones para las fechas agrupaciones por Mes
 #a = Union_FB.Nombre_Campaña.value_counts()
@@ -98,32 +107,43 @@ Informacion = pd.merge(Informacion,Union_FB.groupby(['Archivo'], as_index = Fals
 #Adwords#
 #########
 
+#Ruta
 os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Adwords')
-Archivos = os.listdir()
+Archivos = pd.Series(os.listdir())
 
+#Union de Archivos
 Union_Ad = []
-
-a = pd.read_csv(Archivos[1], sep = '\t', skiprows = 2) 
+fallas = []
 
 for csv in Archivos:
-    tmp = pd.read_csv(csv , sep='\t') 
-    Union_Ad.append(tmp)
+    try:
+        tmp = pd.read_csv(csv, sep = ',', skiprows = 2)
+        tmp['Archivo'] = csv
+        Union_Ad.append(tmp)
+    except:
+        fallas.append(csv)
 
 Union_Ad = pd.concat(Union_Ad).reset_index(drop = True)
 
-Union_Ad = Union_Ad.loc[:,('Campaña','Fecha de inicio','Fecha de finalización','Cuenta','Impresiones','Clics','Costo'),]
-Union_Ad.columns = ['Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Impresiones','Clics','dinero_gastado']
+Union_Ad.Archivo.value_counts()
+print("Archivo que fallaron: " + str(fallas))
+
+#Formato para la union con las demás bases
+
+Union_Ad = Union_Ad.loc[:,('Archivo','Campaña','Fecha de inicio','Fecha de finalización','Cuenta','Impresiones','Clics','Costo'),]
+Union_Ad.columns = ['Archivo','Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Impresiones','Clics','dinero_gastado']
 Union_Ad['Plataforma'] = 'Adwords'
 
 Union_Ad.Clics = Union_Ad.Clics.apply(lambda x : str(x).replace(',','')).astype('int')
 Union_Ad.Impresiones = Union_Ad.Impresiones.apply(lambda x: str(x).replace(',','')).astype('int')
 Union_Ad.dinero_gastado = Union_Ad.dinero_gastado.apply(lambda x: str(x).replace(',','')).astype('float')
 
-Union_Ad.Fecha_inicio = Union_Ad.Fecha_inicio.apply(lambda x: x.date())
-
 Union_Ad.loc[(Union_Ad.Marca.str.contains('Office') | Union_Ad.Marca.str.contains('OD')) & (~Union_Ad.Marca.str.contains('CAM')) , 'Marca'] = 'Office Depot MEX'
-Union_Ad.loc[Union_Ad.Marca.str.contains('Petco'),'Marca'] = 'Petco'
-Union_Ad.loc[Union_Ad.Marca.str.contains('RS'), 'Marca'] = 'Radioshack'
+Union_Ad.loc[Union_Ad.Marca.str.contains('Petco') | Union_Ad.Marca.str.contains('PETCO'),'Marca'] = 'Petco'
+Union_Ad.loc[Union_Ad.Marca.str.contains('RS') | Union_Ad.Marca.str.contains('Radioshack') | Union_Ad.Marca.str.contains('RadioShack'), 'Marca'] = 'Radioshack'
+
+#Validaciones
+#Union_Ad.Marca.value_counts()
 
 #########################
 #Adform/Sizmek (display)#
@@ -203,12 +223,10 @@ Union_Adf.dinero_gastado = Union_Adf.dinero_gastado.apply(lambda x: str(x).repla
 #Union de Archivos#
 ###################
 
-Base_master = pd.concat([Union_FB,Union_Ad,Union_Adf], axis = 0)
+Base_master = pd.concat([Union_FB,Union_Ad], axis = 0)
 Base_master.Fecha_inicio = pd.to_datetime(Base_master.Fecha_inicio)
 
-os.chdir('/home/carlos/Documentos/Adsocial/Sheets/')
-Base_master.to_csv('Base_master.csv')
-print("Adwords : " + str(Union_Ad.shape)) ; print("Adform : " + str(Union_Adf.shape)) ; print("Facebook : " + str(Union_FB.shape)) ; print("Total : " + str(Union_Ad.shape[0] + Union_Adf.shape[0] + Union_FB.shape[0]))
+print("Adwords : " + str(Union_Ad.shape)) ; print("Facebook : " + str(Union_FB.shape)) ; print("Total : " + str(Union_Ad.shape[0] + Union_FB.shape[0]))
 del Union_Ad, Union_Adf, Union_FB,tmp
 
 ####################################################FIN ARCHIVOS CAMPAÑAS###########################################################
@@ -221,7 +239,7 @@ Todo_Analytics = []
 
 #Este for va entrando en cada carpeta para solo trabajar con los arhivos de cada Marca
 for Analytics in os.listdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/'):
-    
+
     os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/' + str(Analytics))
     Archivos = pd.Series(os.listdir())
     
@@ -282,9 +300,12 @@ for Analytics in os.listdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/'
 #Terminación del primer for
 Todo_Analytics = pd.concat(Todo_Analytics)
 
+#Validaciones
+
+#Todo_Analytics.keys()
+#a = Todo_Analytics.groupby(['Marca','Tipo','archivo']).count()
+#Todo_Analytics.Marca.value_counts()
 #Trabajar las fechas para conocer el Mes
-
-
 
 ####################################################FIN ANALYTICS#############################################################
 
@@ -323,7 +344,6 @@ datos = pd.DataFrame(datos)
 
 for i in Archivos:
     print(i)
-
 
 
 
