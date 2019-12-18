@@ -5,27 +5,31 @@ Created on Fri Oct 18 13:20:36 2019
 
 @author: carlos
 
-El siguiente script une la iformación de varias fuentes, al final crea 2 bases. bases_master, Todo_Analytics
+Nota importante: Los archivos tienen que tener codificación utf-8
 
-Facebook: Se descargan reportes mensuales por Marca de las plataformas
-Adwords: Solo se descarga un reporte al Mes KPI
-Adform: Se extraen de los sheets de los Operadores
+El siguiente script une la iformación de varias fuentes, al final crea la base que debe subirse al sheets
 
-Analytics: Se divide el reporte por Conversiones y trafico por Marca
+- Facebook: Se descargan reportes mensuales por Marca de las plataformas
+  Respetando el nombre de la plataforma: Office-Depot-Campañas-1-abr-2019-30-abr-2019.csv
+
+- Adwords: Solo se descarga un reporte al Mes KPI , al nombrar el archivo debemos colocar la fecha de la siguiente manera:
+         KPI_1-feb-2019-29-feb-2019.csv
+
+- Adform: Se extraen de los sheets de los Operadores se descarga en un csv la hoja llamada General y cuidar el nombre de las columnas
+  Renombrar el nombre del reporte que contenga la fecha de la siguiente manera: 
+      1-ene-2020-30-ene-2020
+
+Las columnas que recabo son: 
+    'Archivo', 'Clics', 'Fecha_Fin', 'Fecha_inicio', 'Impresiones', 'Marca','Mes', 'Nombre_Campaña', 'Plataforma', 'dinero_gastado'
 
 """
 
 ###Paqueterias
-
 import os 
-import datetime
 import pandas as pd
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from gspread_dataframe import set_with_dataframe #,get_as_dataframe
+import re
 
 ###Rutas
-
 os.getcwd()
 os.chdir('/home/carlos/Documentos/Adsocial/Sheets/')
 os.listdir()
@@ -82,8 +86,9 @@ else:
 Union_FB = Union_FB.groupby(['Nombre de la campaña','Inicio','Finalización','Marca','Archivo'], as_index = False).sum()
 #tmp_1 = Union_FB[Union_FB.iloc[:,0] == '1910_OD _VENTA_MKT_NOCTURNA_2019']
 
-Union_FB.columns = ['Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Archivo','Impresiones','Clics','dinero_gastado']
+Union_FB.columns = ['Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Archivo','Clics','dinero_gastado','Impresiones']
 Union_FB['Plataforma'] = 'Facebook'
+Union_FB['Mes'] = ''
 
 #Colocación de Marcas
 Union_FB.loc[Union_FB.Marca.str.contains('Radio'),'Marca'] = 'Radioshack'
@@ -121,6 +126,7 @@ for csv in Archivos:
         tmp['Archivo'] = csv
         Union_Ad.append(tmp)
     except:
+        #En ocasiones por el formato no leía el archivo utf-
         fallas.append(csv)
 
 Union_Ad = pd.concat(Union_Ad).reset_index(drop = True)
@@ -142,6 +148,8 @@ Union_Ad.loc[(Union_Ad.Marca.str.contains('Office') | Union_Ad.Marca.str.contain
 Union_Ad.loc[Union_Ad.Marca.str.contains('Petco') | Union_Ad.Marca.str.contains('PETCO'),'Marca'] = 'Petco'
 Union_Ad.loc[Union_Ad.Marca.str.contains('RS') | Union_Ad.Marca.str.contains('Radioshack') | Union_Ad.Marca.str.contains('RadioShack'), 'Marca'] = 'Radioshack'
 
+Union_Ad.Fecha_Fin = Union_Ad.Fecha_Fin.apply(lambda x : str(x).replace(' --','')).astype('str')
+
 #Validaciones
 #Union_Ad.Marca.value_counts()
 
@@ -149,65 +157,67 @@ Union_Ad.loc[Union_Ad.Marca.str.contains('RS') | Union_Ad.Marca.str.contains('Ra
 #Adform/Sizmek (display)#
 #########################
 
+#Archivos de Pao
 os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Adform')
 Archivos = os.listdir()
 
-#Historico
-Acumulado = pd.read_excel('Historico/Acumulado Reporte DSP.xlsx') 
-#Acumulado.keys() #Ya vienen columnas que nos ayudan con info de los MP
-Acumulado['Plataforma'] = 'Adform'
-Acumulado['Archivo'] = 'Acumulado Reporte DSP.xlsx'
-#Acumulado.keys() ya tenemos columnas que facilitan uniones futuras, solo tomo estas para el caso del archivo primera_base_master
-Acumulado = Acumulado.loc[:,('Archivo','Campaña','Fecha Inicio','Fecha Fin','Marca','KPI Entregado','CLICKS','MP Planeada','Plataforma')]
-Acumulado.columns = ['Archivo','Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Impresiones','Clics','dinero_gastado','Plataforma'] 
-
-Union_Adf = []
+Union_Adf_nuevo = []
 
 for csv in Archivos:
     try:
         tmp = pd.read_csv(csv, skiprows = 1)
         tmp = tmp.iloc[:-2,:]
         tmp['Archivo'] = csv
-        Union_Adf.append(tmp)
+        Union_Adf_nuevo.append(tmp)
     except:
         print('Alguno archivo no es csv')
 
-Union_Adf = pd.concat(Union_Adf).reset_index(drop = True)
-Union_Adf['Plataforma'] = 'Adform'
-
-#Antes de septiembre tomo impresiones de SAS
+Union_Adf_nuevo = pd.concat(Union_Adf_nuevo).reset_index(drop = True)
+Union_Adf_nuevo['Plataforma'] = 'Adform'
+Union_Adf_nuevo['Mes'] = ''
 #De nomviembre para adelante tomo impresiones de Adform
-
 #Seleccion de columnas necesarios
+Union_Adf_nuevo = Union_Adf_nuevo.loc[:,('Mes','Archivo','Campaña','Fecha Inicio','Fecha Fin','Marca','KPI Entregado Adform','Clics Adform','$$ Planeada MXN','Plataforma')]
+Union_Adf_nuevo.columns = ['Mes','Archivo','Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Impresiones','Clics','dinero_gastado','Plataforma'] 
 
-Union_Adf = Union_Adf.loc[:,('Archivo','Campaña','Fecha Inicio','Fecha Fin','Marca','KPI Entregado Adform','Clics Adform','$$ Planeada MXN','Plataforma')]
-Union_Adf.columns = ['Archivo','Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Impresiones','Clics','dinero_gastado','Plataforma'] 
+Union_Adf_nuevo.loc[Union_Adf_nuevo.Nombre_Campaña.str.contains('Petco') | Union_Adf_nuevo.Nombre_Campaña.str.contains('PC'), 'Marca'] = 'Petco'
+Union_Adf_nuevo.loc[Union_Adf_nuevo.Nombre_Campaña.str.contains('Office') | Union_Adf_nuevo.Nombre_Campaña.str.contains('OD'), 'Marca'] = 'Office Depot MEX'
+Union_Adf_nuevo.loc[Union_Adf_nuevo.Nombre_Campaña.str.contains('RadioShack') | Union_Adf_nuevo.Nombre_Campaña.str.contains('RS'), 'Marca'] = 'Radioshack'
 
-Union_Adf = pd.concat([Union_Adf,Acumulado])
+Union_Adf_nuevo.Fecha_inicio = pd.to_datetime(Union_Adf_nuevo.Fecha_inicio, errors = 'coerce', format = '%d/%m/%Y')
+Union_Adf_nuevo.Fecha_Fin = pd.to_datetime(Union_Adf_nuevo.Fecha_Fin,errors = 'coerce', format = '%d/%m/%Y')
+
+Union_Adf_nuevo.Fecha_inicio = Union_Adf_nuevo.Fecha_inicio.apply(lambda x: x.date())
+Union_Adf_nuevo.Fecha_Fin = Union_Adf_nuevo.Fecha_Fin.apply(lambda x: x.date())
+
+Union_Adf_nuevo.Clics.fillna(0, inplace=True)
+Union_Adf_nuevo.Clics = Union_Adf_nuevo.Clics.apply(lambda x : str(x).replace(',','')).astype('float').astype('int')
+Union_Adf_nuevo.Impresiones = Union_Adf_nuevo.Impresiones.apply(lambda x: str(x).replace(',','')).astype('int')
+Union_Adf_nuevo.dinero_gastado = Union_Adf_nuevo.dinero_gastado.apply(lambda x: str(x).replace('$',''))
+Union_Adf_nuevo.dinero_gastado = Union_Adf_nuevo.dinero_gastado.apply(lambda x: str(x).replace(',','')).astype('float')
+
+#Historico
+#Antes de septiembre tomo impresiones de SAS
+Acumulado = pd.read_excel('Historico/Acumulado Reporte DSP.xlsx') 
+#Acumulado.keys() #Ya vienen columnas que nos ayudan con info de los MP
+Acumulado['Plataforma'] = 'Adform'
+Acumulado['Archivo'] = 'Acumulado Reporte DSP.xlsx'
+#Acumulado.keys() ya tenemos columnas que facilitan uniones futuras, solo tomo estas para el caso del archivo primera_base_master
+Acumulado = Acumulado.loc[:,('Mes','Archivo','Campaña','Fecha Inicio','Fecha Fin','Marca','KPI Entregado','CLICKS','MP Planeada','Plataforma')]
+Acumulado.columns = ['Mes','Archivo','Nombre_Campaña','Fecha_inicio','Fecha_Fin','Marca','Impresiones','Clics','dinero_gastado','Plataforma'] 
 
 #Colocación de la columna Marca
-Union_Adf.loc[Union_Adf.Nombre_Campaña.str.contains('Petco') | Union_Adf.Nombre_Campaña.str.contains('PC'), 'Marca'] = 'Petco'
-Union_Adf.loc[Union_Adf.Nombre_Campaña.str.contains('Office') | Union_Adf.Nombre_Campaña.str.contains('OD'), 'Marca'] = 'Office Depot MEX'
-Union_Adf.loc[Union_Adf.Nombre_Campaña.str.contains('RadioShack') | Union_Adf.Nombre_Campaña.str.contains('RS'), 'Marca'] = 'Radioshack'
+Acumulado.loc[Acumulado.Nombre_Campaña.str.contains('Petco') | Acumulado.Nombre_Campaña.str.contains('PC'), 'Marca'] = 'Petco'
+Acumulado.loc[Acumulado.Nombre_Campaña.str.contains('Office') | Acumulado.Nombre_Campaña.str.contains('OD'), 'Marca'] = 'Office Depot MEX'
+Acumulado.loc[Acumulado.Nombre_Campaña.str.contains('RadioShack') | Acumulado.Nombre_Campaña.str.contains('RS'), 'Marca'] = 'Radioshack'
 
-#Formato adecuado para homologar datos
-#Union_Adf.Fecha_inicio = Union_Adf.Fecha_inicio.apply(lambda x: datetime.datetime.strptime(x,"%d/%m/%Y").strftime("%Y-%m-%d"))
-#Union_Adf.Fecha_Fin = Union_Adf.Fecha_Fin.apply(lambda x: datetime.datetime.strptime(x,"%d/%m/%Y").strftime("%Y-%m-%d"))
+Acumulado.Fecha_inicio = pd.to_datetime(Acumulado.Fecha_inicio, errors = 'coerce', format = '%d/%m/%Y')
+Acumulado.Fecha_Fin = pd.to_datetime(Acumulado.Fecha_Fin,errors = 'coerce', format = '%d/%m/%Y')
 
-Union_Adf.Fecha_inicio = pd.to_datetime(Union_Adf.Fecha_inicio)
-Union_Adf.Fecha_Fin = pd.to_datetime(Union_Adf.Fecha_Fin)
+Acumulado.Fecha_inicio = Acumulado.Fecha_inicio.apply(lambda x: x.date())
+Acumulado.Fecha_Fin = Acumulado.Fecha_Fin.apply(lambda x: x.date())
 
-Union_Adf.Fecha_inicio = Union_Adf.Fecha_inicio.apply(lambda x: x.date())
-Union_Adf.Fecha_Fin = Union_Adf.Fecha_Fin.apply(lambda x: x.date())
-
-Union_Adf.Clics.fillna(0, inplace=True)
-Union_Adf.Clics = Union_Adf.Clics.apply(lambda x : str(x).replace(',','')).astype('float').astype('int')
-Union_Adf.Impresiones = Union_Adf.Impresiones.apply(lambda x: str(x).replace(',','')).astype('int')
-Union_Adf.dinero_gastado = Union_Adf.dinero_gastado.apply(lambda x: str(x).replace('$',''))
-Union_Adf.dinero_gastado = Union_Adf.dinero_gastado.apply(lambda x: str(x).replace(',','')).astype('float')
-
-
-#Lectura de un archivo de sheets hoja General
+Union_Adf = pd.concat([Union_Adf_nuevo,Acumulado])
 
 ###################
 #Union de Archivos#
@@ -217,114 +227,128 @@ Base_master = pd.concat([Union_FB,Union_Ad,Union_Adf], axis = 0)
 Base_master.Fecha_inicio = pd.to_datetime(Base_master.Fecha_inicio)
 
 print("Facebook : " + str(Union_FB.shape)) ; print("Adwords : " + str(Union_Ad.shape)) ; print("Adform : " + str(Union_Adf.shape)) ; print("Total : " + str(Union_FB.shape[0] + Union_Ad.shape[0] + Union_Adf.shape[0]))
-del Union_Ad, Union_Adf, Union_FB,tmp
+del Union_Ad, Union_Adf, Union_Adf_nuevo, Union_FB,tmp, Archivos, csv, Informacion_Facebook, fallas, Acumulado
 
-####################################################FIN ARCHIVOS CAMPAÑAS###########################################################
+########
+#Fechas#
+########
+#Extreamos las fechas del nombre del reporte
+Fechas = list(Base_master.Archivo.unique())
 
-###########
-#Analytics#
-###########
+#####Se extrae la fecha de la columna Archivo, para crear Fecha_inicio_reporte y Fecha_fin_reporte
 
-Todo_Analytics = []
+Base_master['Archivo_fechas'] = Base_master['Archivo']
 
-#Este for va entrando en cada carpeta para solo trabajar con los arhivos de cada Marca
-for Analytics in os.listdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/'):
+for word, initial in {"ene":"1", "feb":"2","mar":"3", "abr":"4","may":"5", "jun":"6","jul":"7", "ago":"8","sep":"9", "oct":"10","nov":"11", "dic":"12"}.items():
+    Base_master.Archivo_fechas = Base_master.Archivo_fechas.str.replace(str(word),str(initial))
 
-    os.chdir('/home/carlos/Documentos/Adsocial/Sheets/Analytics/' + str(Analytics))
-    Archivos = pd.Series(os.listdir())
+Base_master['fecha_reporte'] = [re.findall(r"\d{1}-\d{1}-\d{4}|\d{2}-\d{1}-\d{4}|\d{1}-\d{2}-\d{4}|\d{2}-\d{2}-\d{4}", i) 
+                                for i in list(Base_master.Archivo_fechas)]
+
+fechas = [re.findall(r"\d{1}-\d{1}-\d{4}|\d{2}-\d{1}-\d{4}|\d{1}-\d{2}-\d{4}|\d{2}-\d{2}-\d{4}", i) for i in list(Base_master.Archivo_fechas)]
+
+fechas = pd.DataFrame(fechas)
+fechas.columns = ['Fecha_inicio_reporte','Fecha_fin_reporte']
+
+Base_master = pd.concat([Base_master.reset_index(drop=True),pd.DataFrame(fechas)], axis=1)
+
+del Fechas, fechas, initial, word
+#Formato correcto para trabajar con las fechas
+
+#ok
+Base_master['t_fecha_fin'] =  pd.to_datetime(Base_master.loc[:,'Fecha_Fin'],errors='ignore',
+                              format='%Y-%m-%d')
+#ok
+Base_master['t_fecha_inicio'] =  pd.to_datetime(Base_master['Fecha_inicio'],
+                              format='%Y-%m-%d')
+#ok
+Base_master['t_fecha_inicio_reporte'] =  pd.to_datetime(Base_master['Fecha_inicio_reporte'],
+                              format='%d-%m-%Y')
+
+#ok
+Base_master['t_fecha_fin_reporte'] =  pd.to_datetime(Base_master['Fecha_fin_reporte'],errors='coerce',
+                              format='%d-%m-%Y')
+
+#Reglas para determinar los dias de duracion de una campaña en un mes
+#Fecha inicio reporte
+def fechas_inicio(x,y):
+    if x <= y:
+        return y
+    else:
+        return x
     
-    #Conversiones Asistidas
-    tmp_conversiones = list(Archivos[Archivos.str.contains('Conver')])
+Base_master['inicio'] = [fechas_inicio(x,y) for x, y in zip(Base_master.t_fecha_inicio_reporte,Base_master.t_fecha_inicio)] #Este es el bueno
 
-    Union_conversiones = []
+#Fecha fin reporte
+def fechas_fin(x,y):
+    if x <= y:
+        return x
+    else:
+        return y
     
-    #Trabaja solo los archivos de conversiones
-    for csv in tmp_conversiones:
-        tmp = pd.read_csv(csv, skiprows = 6)
-        tmp = tmp.iloc[:-3,:]
-        tmp['archivo'] = csv
-        Union_conversiones.append(tmp)
+Base_master['fin'] = [fechas_fin(x,y) for x, y in zip(Base_master.t_fecha_fin_reporte,Base_master.t_fecha_fin)] #Este es el bueno
 
-    Union_conversiones = pd.concat(Union_conversiones)
+#Fechas faltantes 
+Base_master['fin'] = Base_master.fin.fillna(0)
 
-    Union_conversiones = Union_conversiones.loc[:,('archivo','Fuente/Medio','Campaña','Conversiones asistidas','Valor de las conversiones asistidas')]
-    Union_conversiones.columns = ['archivo','Fuente_Medio','Nombre_Campaña','Conversiones','Revenue']
+def fechas_vacias(x,y):
+    if x == 0:
+        return y
+    else:
+        return x
 
-    Union_conversiones['Tipo'] = 'Asistida'
+Base_master['fin'] = [fechas_vacias(x,y) for x, y in zip(Base_master.fin, Base_master.t_fecha_fin_reporte)]
 
-    Union_conversiones.Conversiones = Union_conversiones.Conversiones.astype('int')
+Base_master['dias'] = Base_master.fin - Base_master.inicio
 
-    Union_conversiones.Revenue = Union_conversiones.Revenue.apply(lambda x : str(x).replace('.',''))
-    Union_conversiones.Revenue = Union_conversiones.Revenue.apply(lambda x : str(x).replace(',','.'))
-    Union_conversiones.Revenue = Union_conversiones.Revenue.apply(lambda x : str(x).replace('MXN','')).astype('float')
+#Tengo días negativos
 
-    #Conversiones todo el trafico
-    tmp_trafico = list(Archivos[Archivos.str.contains('Todo el ')])
+#Columna mes
+Base_master['Mes'] = Base_master.inicio.apply(lambda x : x.month)
+Base_master['Año'] = Base_master.inicio.apply(lambda x : x.year)
 
-    Union_trafico = []
+#Columnas que se muestran en el archivo del sheets
+Base_master_final = Base_master.loc[:,('Archivo','Marca','Plataforma','Nombre_Campaña','Mes','Año','inicio','fin','dias','t_fecha_inicio_reporte','t_fecha_fin_reporte','Impresiones','Clics','dinero_gastado')]
 
-    #Trabaja los archivos de trafico al sitio
-    for xls in tmp_trafico:
-        tmp = pd.ExcelFile(xls)
-        tmp = pd.read_excel(tmp, 'Conjunto de datos1')
-        tmp = tmp.iloc[:-1,:]
-        tmp['archivo'] = xls
-        Union_trafico.append(tmp)
+#########################################
+#Escritura de los datos en Google Sheets#
+#########################################
+import os
+from datetime import datetime
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+from gspread_dataframe import set_with_dataframe #,get_as_dataframe
 
-    Union_trafico = pd.concat(Union_trafico)
+Escribir = input("Deseas escribir los datos en sheets si/no : ")
 
-    Union_trafico = Union_trafico.loc[:,('archivo','Fuente/Medio','Campaña','Transacciones','Ingresos')]
-    Union_trafico.columns = ['archivo','Fuente_Medio','Nombre_Campaña','Conversiones','Revenue']
-    Union_trafico['Tipo'] = 'Directa'
+if Escribir == 'si':
+    os.chdir('/home/carlos/Documentos/Adsocial')
+    os.listdir()
+    #Autentificacion con google cloud platform correo analytics.adsocial@gmail.com
+    scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
+    creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
+    client = gspread.authorize(creds)
 
-    Union_trafico.Conversiones = Union_trafico.Conversiones.astype('int')
+    Base_master_final['ultima_actualizacion'] = datetime.now()
     
-    #Union de los 2 tmp
-    Union_Analytics = pd.concat([Union_conversiones,Union_trafico])
-    Union_Analytics['Marca'] = Analytics
-    
-    #Una vez que tenemos todos los archivos de cada Marca los almacenamos en un archivo final
-    Todo_Analytics.append(Union_Analytics)
-    del tmp_conversiones, tmp_trafico, csv, xls, tmp
+    sh = client.open('Copy of DASHBOARD GG - Reporte ROAS MES A MES') #Recordar que el archivo que deseamos leer tiene que tener el correo de la api como persona compartida
+    worksheet = sh.get_worksheet(1) #Base_master_python
 
-#Terminación del primer for
-Todo_Analytics = pd.concat(Todo_Analytics)
+    filas = len(worksheet.get_all_values()) + 1
+    set_with_dataframe(worksheet, Base_master_final, row = filas, include_column_header = False)
 
-#Validaciones
+else: 
+    print("Ok!")    
 
-#Todo_Analytics.keys()
-#a = Todo_Analytics.groupby(['Marca','Tipo','archivo']).count()
-#Todo_Analytics.Marca.value_counts()
-#Trabajar las fechas para conocer el Mes
+#Agregar que valide la información que ya existe por nombre de Archivo
 
-####################################################FIN ANALYTICS#############################################################
+#Tengo problemas con adwords
+    #Volver a bajar el reporte
+tmp = Base_master_final[Base_master_final.Plataforma == 'Facebook']
+#Facebook necesito los reportes en formato csv
+
+#Adform no se cual es la información
 
 
-#filtro = Union_Analytics[Union_Analytics.Fuente_Medio == 'Adsocial_FB / ANUNCIO_HYPERX_02_AL_31_OCTUBRE']
 
-#Cruzar con un reporte de producto
 
-#Conexion con Google Sheets, usando las paqueterias gspread, oauth2client, gspread_dataframe
-#Credenciales cred.json
-os.chdir('/home/carlos/Documentos/Adsocial')
-os.listdir()
-#Autentificacion con google cloud platform correo analytics.adsocial@gmail.com
-scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
-client = gspread.authorize(creds)
-
-#Exportacion de la informacion
-sh = client.open('Copy of DASHBOARD GG - Reporte ROAS MES A MES') #Recordar que el archivo que deseamos leer tiene que tener el correo de la api como persona compartida
-worksheet = sh.get_worksheet(1) #Base_master_python
-set_with_dataframe(worksheet, Base_master)
-
-worksheet = sh.get_worksheet(2) #Union_Analytics_python
-set_with_dataframe(worksheet, Todo_Analytics)
-
-#Extraccion de datos sheets
-#datos = worksheet.get_all_values()
-#datos = pd.DataFrame(datos)
-
-#Extraccion con get_as_dataframe
-#df2 = get_as_dataframe(worksheet)
-#df = get_as_dataframe(worksheet, parse_dates=True, usecols=[0,2], skiprows=1, header=None)
