@@ -349,6 +349,7 @@ tmp = Base_master_final[Base_master_final.Plataforma == 'Facebook']
 
 #Adform no se cual es la información
 
+Base_master_final.to_csv('/home/carlos/Documentos/Adsocial/Sheets/Informacion_final/Base_master.csv')
 
 
 

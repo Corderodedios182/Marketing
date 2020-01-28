@@ -122,6 +122,6 @@ Todo_Analytics['fechas'] = [ re.findall( r"\d{8}-\d{8}" ,i) for i in Todo_Analyt
 #df2 = get_as_dataframe(worksheet)
 #df = get_as_dataframe(worksheet, parse_dates=True, usecols=[0,2], skiprows=1, header=None)
 
-
+Todo_Analytics.to_csv('/home/carlos/Documentos/Adsocial/Sheets/Informacion_final/Todo_Analytics.csv')
 
 
