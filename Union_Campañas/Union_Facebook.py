@@ -7,6 +7,7 @@ Created on Fri Jan 24 12:44:23 2020
 """
 import os
 import pandas as pd
+pd.set_option('display.float_format', lambda x: '%.5f' % x)
 #import datetime
 
 os.chdir("/home/carlos/Documentos/Adsocial/Bases AdSocial/2020")
@@ -26,75 +27,163 @@ C_Facebook = Facebook.loc[:,'Nombre de la campaña'].str.split("_",10,expand = T
 C_Facebook.columns = cols
 C_Facebook = C_Facebook[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
 
-Facebook['Llave'] = C_Facebook ; del C_Facebook
+Facebook['Llave_Facebook'] = C_Facebook ; del C_Facebook
+Facebook['Llave_Facebook'] = Facebook['Llave_Facebook'].str.strip()
 
 #Columnas de interés
 Facebook.keys()
-Facebook = Facebook.loc[:,('Nombre de la cuenta','Nombre de la campaña','Llave','Mes','Objetivo','Inicio','Finalización','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
-Facebook.columns = ['Nombre_Cuenta','Nombre_campaña','llave','mes','objetivo','Fecha_Inicio','Fecha_Fin','dinero_gastado','impresiones','clics_enlace']
-tmp = Facebook.groupby(['llave'], as_index = False).sum()
+Facebook = Facebook.loc[:,('Nombre de la cuenta','Nombre de la campaña','Llave_Facebook','Mes','Objetivo','Inicio','Finalización','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
+Facebook.columns = ['Nombre_Cuenta','Nombre_campaña','llave_facebook','mes','objetivo','Fecha_Inicio','Fecha_Fin','dinero_gastado','impresiones','clics_enlace']
+#tmp = Facebook.groupby(['llave'], as_index = False).sum()
 #Se eliminan las campañas provenientes de estás cuentas puede que no mache con el MP
 Facebook = Facebook.loc[ ~( (Facebook.Nombre_Cuenta.str.contains('Adsocial'))  |  (Facebook.Nombre_Cuenta.str.contains('Dokkoi')) ) ]
-Facebook.llave = Facebook.llave.str.lower()
+Facebook.llave_facebook = Facebook.llave_facebook.str.lower()
+Facebook.llave_facebook = Facebook.llave_facebook + str("_FB")
 
 #tmp = Facebook.groupby(['Nombre de la cuenta','Llave','Nombre de la campaña','Objetivo'], as_index = False).count()
 #tmp_0 = Facebook[Facebook['Llave'] == '2001_gicsa_explanadapuebla_pi_mkt']
-Facebook_tmp = Facebook.groupby(['llave'], as_index = False).sum()
+Facebook = Facebook.groupby(['llave_facebook'], as_index = False).sum()
 
 ########################
 #Archivo de Ventas 2020#
 ########################
 
-Ventas_Operativo = pd.read_excel('Ventas 2020 - AdSocial.xlsx', sheet_name = 'Ventas 2020 Operativo', skiprows = 1)
-Ventas_Operativo.CAMPAÑA = Ventas_Operativo.CAMPAÑA.str.lower()
-Ventas_Operativo = Ventas_Operativo[~pd.isnull(Ventas_Operativo.CLIENTE)]
+KPIS_MP = pd.read_csv('KPIS 2020 - AdSocial - KPIS MP 2020.csv', skiprows = 2)
 
-#tmp_1 = Ventas_Operativo[Ventas_Operativo['CAMPAÑA'] == '2001_OD_Instagram_PI_MKT']
-Ventas_Operativo.keys()
+KPIS_FIC = pd.read_csv('KPIS 2020 - AdSocial - KPIS FIC 2020.csv', skiprows = 2)
 
-#Cruze Facebook vs Ventas_Operativas
-Cruze_Facebook = pd.merge(Facebook_tmp,Ventas_Operativo,how = 'left', left_on = 'llave', right_on = 'CAMPAÑA')
-NO_Cruze_Facebook = Cruze_Facebook[pd.isnull(Cruze_Facebook.CAMPAÑA)]
-#¿Cuantos cruzaron? 12
-Cruze_Facebook = Cruze_Facebook[~pd.isnull(Cruze_Facebook.CAMPAÑA)]
+ #Formato columnas
+KPIS_FIC.loc[:,'NOMENCLATURA'] = KPIS_FIC.loc[:,'NOMENCLATURA'].str.lower()
 
-#¿Cuantas faltan de acuerdo a ventas? 25
-Cruze_Ventas = pd.merge(Ventas_Operativo,Facebook_tmp,how = 'left', left_on = 'CAMPAÑA', right_on = 'llave')
-NO_Cruze_Ventas = Cruze_Ventas[pd.isnull(Cruze_Ventas.llave)]
+KPIS_MP.loc[:,'NOMENCLATURA'] = KPIS_MP.loc[:,'NOMENCLATURA'].str.lower()
+KPIS_MP.loc[:,'Fin'] = KPIS_MP.loc[:,'Fin'].apply(lambda x: str(x.replace('31-ene.','31/01/20')))
 
-#Separación de la nomeclatura
+def Formato_Fechas(Base, Columna):
+    Base.loc[:,Columna] = pd.to_datetime(Base.loc[:,Columna], errors = 'ignore', format = '%d/%m/%y')
+    return Base.loc[:,Columna]
 
-tmp_1_f = NO_Cruze_Facebook.llave.str.split("_", expand = True) 
-tmp_1_f.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
-tmp_1_f['archivo'] = 'Facebook'
-tmp_1_f['Nombre_Campaña'] = NO_Cruze_Facebook.llave
+def Formato_numerico(Base, Columna):
+    Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).replace('$',''))
+    Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).replace(',',''))
+    Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).strip())
+    Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).replace('-','0'))
+    Base.loc[:,Columna] = Base.loc[:,Columna].astype('float')
+    Base.loc[:,Columna] = round(Base.loc[:,Columna],2)
+    return Base.loc[:,Columna]
 
-tmp_1_f['Año-Mes'].value_counts()
-tmp_1_f['Cliente'].value_counts()
-tmp_1_f['Marca'].value_counts()
-tmp_1_f['Tipo-1'].value_counts()
-tmp_1_f['Tipo-2'].value_counts()
+KPIS_MP.loc[:,'Inicio'] = Formato_Fechas(KPIS_MP, 'Inicio')
+KPIS_MP.loc[:,'Fin'] = Formato_Fechas(KPIS_MP, 'Fin')
 
-tmp_2_v = NO_Cruze_Ventas.CAMPAÑA.str.split("_", expand = True) 
-tmp_2_v.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
-tmp_2_v['archivo'] = 'Ventas Operativo Facebook'
-tmp_2_v['Nombre_Campaña'] = NO_Cruze_Ventas.CAMPAÑA
+KPIS_FIC.loc[:,'Inicio'] = Formato_Fechas(KPIS_FIC, 'Inicio')
+KPIS_FIC.loc[:,'Fin'] = Formato_Fechas(KPIS_FIC, 'Fin')
 
-tmp_2_v['Año-Mes'].value_counts()
-tmp_2_v['Cliente'].value_counts()
-tmp_2_v['Marca'].value_counts()
-tmp_2_v['Tipo-1'].value_counts()
-tmp_2_v['Tipo-2'].value_counts()
+
+KPIS_MP.loc[:,'Costo Planeado'] = Formato_numerico(KPIS_MP, 'Costo Planeado')
+KPIS_MP.loc[:,'KPI Planeado'] = Formato_numerico(KPIS_MP, 'KPI Planeado')
+KPIS_MP.loc[:,'Serving'] = Formato_numerico(KPIS_MP, 'Serving')
+KPIS_MP.loc[:,'Inversión Plataforma'] = Formato_numerico(KPIS_MP, 'Inversión Plataforma')
+KPIS_MP.loc[:,'Inversión Total'] = Formato_numerico(KPIS_MP, 'Inversión Total')
+
+KPIS_FIC.loc[:,'Inversión AdOps'] = Formato_numerico(KPIS_FIC, 'Inversión AdOps')
+KPIS_FIC.loc[:,'Operativo AdOps'] = Formato_numerico(KPIS_FIC, 'Operativo AdOps')
+KPIS_FIC.loc[:,'Serving AdOps'] = Formato_numerico(KPIS_FIC, 'Serving AdOps')
+KPIS_FIC.loc[:,'Costo Operativo'] = Formato_numerico(KPIS_FIC, 'Costo Operativo')
+
+    #Agrupación campañas Unicas, le concatenemos su plataforma para poder cruzarlo solo con los de Facebook sino agrupa por todo.
+KPIS_MP['llave_ventas'] = KPIS_MP.loc[:,'Plataforma']
+
+KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Instagram') , 'llave_ventas'] = 'IG'
+KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Facebook') , 'llave_ventas'] = 'FB'
+KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Google') , 'llave_ventas'] = 'SEM'
+KPIS_MP.loc[(KPIS_MP['Plataforma'].str.contains('Programmatic')) | (KPIS_MP['Plataforma'].str.contains('Display'))  , 'llave_ventas'] = 'DSP'
+KPIS_MP.loc[(KPIS_MP['Plataforma'].str.contains('Waze')) | (KPIS_MP['Plataforma'].str.contains('AdsMovil')) , 'llave_ventas'] = 'PV'
+
+KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Instagram') , 'llave_ventas'] = 'IG'
+KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Facebook') , 'llave_ventas'] = 'FB'
+KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Google') , 'llave_ventas'] = 'SEM'
+KPIS_FIC.loc[(KPIS_FIC['Plataforma'].str.contains('Programmatic')) | (KPIS_FIC['Plataforma'].str.contains('Display'))  , 'llave_ventas'] = 'DSP'
+KPIS_FIC.loc[(KPIS_FIC['Plataforma'].str.contains('Waze')) | (KPIS_FIC['Plataforma'].str.contains('AdsMovil')) , 'llave_ventas'] = 'PV'
+
+KPIS_MP.loc[:,'llave_ventas'] = KPIS_MP.loc[:,'NOMENCLATURA'] + str("_") + KPIS_MP['llave_ventas']
+KPIS_MP["llave_ventas"].str.strip()
+
+KPIS_FIC.loc[:,'llave_ventas'] = KPIS_FIC.loc[:,'NOMENCLATURA'] + str("_") + KPIS_FIC['llave_ventas']
+KPIS_FIC["llave_ventas"].str.strip()
+
+KPIS_MP = KPIS_MP.loc[:, ('NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
+
+KPIS_FIC = KPIS_FIC.loc[:, ('NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
+
+KPIS_MP = KPIS_MP.groupby(['llave_ventas'], as_index = False).sum()
+KPIS_MP = KPIS_MP[KPIS_MP.llave_ventas.str.contains('_FB')]
+
+KPIS_FIC = KPIS_FIC.groupby(['llave_ventas'], as_index = False).sum()
+KPIS_FIC = KPIS_FIC[KPIS_FIC.llave_ventas.str.contains('_FB')]
+
+########
+#Cruzes#
+########
+#MP
+FB_MP = pd.merge(Facebook, KPIS_MP, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
+FB_MP_NO = FB_MP[pd.isnull(FB_MP.llave_ventas)]
+#¿Cuantos cruzaron?
+FB_MP = FB_MP[~pd.isnull(FB_MP.llave_ventas)]
+
+MP_FB = pd.merge(KPIS_MP, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
+MP_FB_NO = MP_FB[pd.isnull(MP_FB.llave_facebook)]
+#¿Cuantos cruzaron? 
+MP_FB = MP_FB[~pd.isnull(MP_FB.llave_facebook)]
+
+#FIC
+FB_FIC = pd.merge(Facebook, KPIS_FIC, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
+FB_FIC_NO = FB_FIC[pd.isnull(FB_FIC.llave_ventas)]
+#¿Cuantos cruzaron?
+FB_FIC = FB_FIC[~pd.isnull(FB_FIC.llave_ventas)]
+
+FIC_FB = pd.merge(KPIS_FIC, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
+FIC_FB_NO = FIC_FB[pd.isnull(FIC_FB.llave_facebook)]
+#¿Cuantos cruzaron?
+FIC_FB = FIC_FB[~pd.isnull(FIC_FB.llave_facebook)]
+
+###########################
+#Validacion de lo faltante#
+###########################
+#FB_MP
+
+FB_MP_NO_1 = FB_MP_NO.llave_facebook.str.split("_", 10,expand = True)
+FB_MP_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+FB_MP_NO_1['archivo'] = 'FB_MP'
+FB_MP_NO_1['Nombre_Campaña'] = FB_MP_NO.llave_facebook
+
+MP_FB_NO_1 = MP_FB_NO.llave_ventas.str.split("_", 10,expand = True)
+MP_FB_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+MP_FB_NO_1['archivo'] = 'MP'
+MP_FB_NO_1['Nombre_Campaña'] = MP_FB_NO.llave_ventas
 
 Union = []
-Union.append(tmp_1_f)
-Union.append(tmp_2_v)
+Union.append(FB_MP_NO_1)
+Union.append(MP_FB_NO_1)
+
+#FB_FIC
+FB_FIC_NO_1 = FB_FIC_NO.llave_facebook.str.split("_", 10,expand = True)
+FB_FIC_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+FB_FIC_NO_1['archivo'] = 'FB_FIC'
+FB_FIC_NO_1['Nombre_Campaña'] = FB_FIC_NO.llave_facebook
+
+FIC_FB_NO_1 = FIC_FB_NO.llave_ventas.str.split("_", 10,expand = True)
+FIC_FB_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+FIC_FB_NO_1['archivo'] = 'FIC'
+FIC_FB_NO_1['Nombre_Campaña'] = FIC_FB_NO.llave_ventas
+
+Union.append(FB_FIC_NO_1)
+Union.append(FIC_FB_NO_1)
 Union = pd.concat(Union)
+
+Union["Nombre_Campaña"] = Union["Nombre_Campaña"].str.replace("_FB","")
 
 Union.archivo.value_counts()
 
-Union_f = Union
-#
+#Desglose por cliente
 OD = Union.loc[ Union.Cliente.str.contains('od', na = False) & ~Union.Cliente.str.contains('sodexo', na = False)]
 RS = Union.loc[ Union.Cliente.str.contains('rs', na = False)]
 THS = Union.loc[ Union.Cliente.str.contains('ths', na = False)]
@@ -129,7 +218,7 @@ if Escribir == 'si':
     wks = spr.worksheet('OTROS')
 
     filas = len(wks.get_all_values()) + 1
-    set_with_dataframe(wks, OTROS, row = filas ,include_column_header = True)
+    set_with_dataframe(wks, OTROS , row = filas ,include_column_header = True)
 
 else: 
     print("Ok!")    
