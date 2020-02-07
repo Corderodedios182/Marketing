@@ -7,6 +7,8 @@ Created on Fri Jan 24 12:44:23 2020
 """
 import os
 import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib
 pd.set_option('display.float_format', lambda x: '%.5f' % x)
 #import datetime
 
@@ -21,6 +23,7 @@ Facebook = pd.read_csv('KPI-Jan-1-2020-Jan-22-2020.csv')
 
 Facebook.Inicio = pd.to_datetime(Facebook.Inicio,format = "%d/%m/%y")
 #Facebook.Finalización = pd.to_datetime(Facebook.Finalización,format = "%d/%m/%y")
+Facebook.dtypes
 
 #Extracción del nombre para cruzar con ventas
 C_Facebook = Facebook.loc[:,'Nombre de la campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
@@ -47,9 +50,7 @@ Facebook = Facebook.groupby(['llave_facebook'], as_index = False).sum()
 ########################
 #Archivo de Ventas 2020#
 ########################
-
 KPIS_MP = pd.read_csv('KPIS 2020 - AdSocial - KPIS MP 2020.csv', skiprows = 2)
-
 KPIS_FIC = pd.read_csv('KPIS 2020 - AdSocial - KPIS FIC 2020.csv', skiprows = 2)
 
  #Formato columnas
@@ -77,7 +78,6 @@ KPIS_MP.loc[:,'Fin'] = Formato_Fechas(KPIS_MP, 'Fin')
 KPIS_FIC.loc[:,'Inicio'] = Formato_Fechas(KPIS_FIC, 'Inicio')
 KPIS_FIC.loc[:,'Fin'] = Formato_Fechas(KPIS_FIC, 'Fin')
 
-
 KPIS_MP.loc[:,'Costo Planeado'] = Formato_numerico(KPIS_MP, 'Costo Planeado')
 KPIS_MP.loc[:,'KPI Planeado'] = Formato_numerico(KPIS_MP, 'KPI Planeado')
 KPIS_MP.loc[:,'Serving'] = Formato_numerico(KPIS_MP, 'Serving')
@@ -90,57 +90,113 @@ KPIS_FIC.loc[:,'Serving AdOps'] = Formato_numerico(KPIS_FIC, 'Serving AdOps')
 KPIS_FIC.loc[:,'Costo Operativo'] = Formato_numerico(KPIS_FIC, 'Costo Operativo')
 
     #Agrupación campañas Unicas, le concatenemos su plataforma para poder cruzarlo solo con los de Facebook sino agrupa por todo.
-KPIS_MP['llave_ventas'] = KPIS_MP.loc[:,'Plataforma']
+KPIS_MP['Plt'] = KPIS_MP.loc[:,'Plataforma']
 
-KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Instagram') , 'llave_ventas'] = 'IG'
-KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Facebook') , 'llave_ventas'] = 'FB'
-KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Google') , 'llave_ventas'] = 'SEM'
-KPIS_MP.loc[(KPIS_MP['Plataforma'].str.contains('Programmatic')) | (KPIS_MP['Plataforma'].str.contains('Display'))  , 'llave_ventas'] = 'DSP'
-KPIS_MP.loc[(KPIS_MP['Plataforma'].str.contains('Waze')) | (KPIS_MP['Plataforma'].str.contains('AdsMovil')) , 'llave_ventas'] = 'PV'
+KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Instagram') , 'Plt'] = 'IG'
+KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Facebook') , 'Plt'] = 'FB'
+KPIS_MP.loc[KPIS_MP['Plataforma'].str.contains('Google') , 'Plt'] = 'SEM'
+KPIS_MP.loc[(KPIS_MP['Plataforma'].str.contains('Programmatic')) | (KPIS_MP['Plataforma'].str.contains('Display'))  , 'Plt'] = 'DSP'
+KPIS_MP.loc[(KPIS_MP['Plataforma'].str.contains('Waze')) | (KPIS_MP['Plataforma'].str.contains('AdsMovil')) , 'Plt'] = 'PV'
 
-KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Instagram') , 'llave_ventas'] = 'IG'
-KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Facebook') , 'llave_ventas'] = 'FB'
-KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Google') , 'llave_ventas'] = 'SEM'
-KPIS_FIC.loc[(KPIS_FIC['Plataforma'].str.contains('Programmatic')) | (KPIS_FIC['Plataforma'].str.contains('Display'))  , 'llave_ventas'] = 'DSP'
-KPIS_FIC.loc[(KPIS_FIC['Plataforma'].str.contains('Waze')) | (KPIS_FIC['Plataforma'].str.contains('AdsMovil')) , 'llave_ventas'] = 'PV'
+KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Instagram') , 'Plt'] = 'IG'
+KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Facebook') , 'Plt'] = 'FB'
+KPIS_FIC.loc[KPIS_FIC['Plataforma'].str.contains('Google') , 'Plt'] = 'SEM'
+KPIS_FIC.loc[(KPIS_FIC['Plataforma'].str.contains('Programmatic')) | (KPIS_FIC['Plataforma'].str.contains('Display'))  , 'Plt'] = 'DSP'
+KPIS_FIC.loc[(KPIS_FIC['Plataforma'].str.contains('Waze')) | (KPIS_FIC['Plataforma'].str.contains('AdsMovil')) , 'Plt'] = 'PV'
 
-KPIS_MP.loc[:,'llave_ventas'] = KPIS_MP.loc[:,'NOMENCLATURA'] + str("_") + KPIS_MP['llave_ventas']
+KPIS_MP['llave_ventas'] = KPIS_MP.loc[:,'NOMENCLATURA'] + str("_") + KPIS_MP['Plt']
 KPIS_MP["llave_ventas"].str.strip()
 
-KPIS_FIC.loc[:,'llave_ventas'] = KPIS_FIC.loc[:,'NOMENCLATURA'] + str("_") + KPIS_FIC['llave_ventas']
+KPIS_FIC['llave_ventas'] = KPIS_FIC.loc[:,'NOMENCLATURA'] + str("_") + KPIS_FIC['Plt']
 KPIS_FIC["llave_ventas"].str.strip()
 
-KPIS_MP = KPIS_MP.loc[:, ('NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
+KPIS_MP = KPIS_MP.loc[:, ('NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
 
-KPIS_FIC = KPIS_FIC.loc[:, ('NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
+KPIS_FIC = KPIS_FIC.loc[:, ('NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
 
-KPIS_MP = KPIS_MP.groupby(['llave_ventas'], as_index = False).sum()
-KPIS_MP = KPIS_MP[KPIS_MP.llave_ventas.str.contains('_FB')]
+#MP
+KPIS_MP = KPIS_MP[~KPIS_MP['Versión'].str.contains('VC')]
 
-KPIS_FIC = KPIS_FIC.groupby(['llave_ventas'], as_index = False).sum()
-KPIS_FIC = KPIS_FIC[KPIS_FIC.llave_ventas.str.contains('_FB')]
+KPIS_MP = KPIS_MP.groupby(['llave_ventas','Plt'], as_index = False).sum()
+KPIS_MP.groupby(['Plt']).count()['llave_ventas'].reset_index()
+
+fig, ax = plt.subplots()
+rects1 = ax.bar(KPIS_MP.groupby(['Plt']).count()['llave_ventas'].reset_index()['Plt'],
+                KPIS_MP.groupby(['Plt']).count()['llave_ventas'].reset_index()['llave_ventas']
+                ,label='Plt')
+
+ax.set_ylabel('Conteo')
+ax.set_title('KPIS_MP Agrupación por Plataforma y Campaña')
+
+def autolabel(rects):
+    """Attach a text label above each bar in *rects*, displaying its height."""
+    for rect in rects:
+        height = rect.get_height()
+        ax.annotate('{}'.format(height),
+                    xy=(rect.get_x() + rect.get_width() / 2, height),
+                    xytext=(0, 3),  # 3 points vertical offset
+                    textcoords="offset points",
+                    ha='center', va='bottom')
+
+
+autolabel(rects1) ; fig.tight_layout() ; plt.show()
+
+#FIC
+KPIS_FIC = KPIS_FIC.groupby(['llave_ventas','Plt'], as_index = False).sum()
+KPIS_FIC.groupby(['Plt']).count()['llave_ventas'].reset_index()
+
+fig, ax = plt.subplots()
+rects1 = ax.bar(KPIS_FIC.groupby(['Plt']).count()['llave_ventas'].reset_index()['Plt'],
+                KPIS_FIC.groupby(['Plt']).count()['llave_ventas'].reset_index()['llave_ventas']
+                ,label='Plt')
+
+ax.set_ylabel('Conteo')
+ax.set_title('KPIS_FIC Agrupación por Plataforma y Campaña')
+
+def autolabel(rects):
+    """Attach a text label above each bar in *rects*, displaying its height."""
+    for rect in rects:
+        height = rect.get_height()
+        ax.annotate('{}'.format(height),
+                    xy=(rect.get_x() + rect.get_width() / 2, height),
+                    xytext=(0, 3),  # 3 points vertical offset
+                    textcoords="offset points",
+                    ha='center', va='bottom')
+
+autolabel(rects1) ; fig.tight_layout() ; plt.show()
+
+#¿Cual falta en el FIC Ó MP?
+pd.merge(KPIS_MP, KPIS_FIC, how = 'inner')
+
+####################################
+#Separación del MP ó FIC Plataforma#
+####################################
+
+KPIS_FIC_FB = KPIS_FIC[KPIS_FIC.llave_ventas.str.contains('_FB')]
+
+KPIS_MP_FB = KPIS_MP[KPIS_MP.llave_ventas.str.contains('_FB')]
 
 ########
 #Cruzes#
 ########
 #MP
-FB_MP = pd.merge(Facebook, KPIS_MP, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
+FB_MP = pd.merge(Facebook, KPIS_MP_FB, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
 FB_MP_NO = FB_MP[pd.isnull(FB_MP.llave_ventas)]
 #¿Cuantos cruzaron?
 FB_MP = FB_MP[~pd.isnull(FB_MP.llave_ventas)]
 
-MP_FB = pd.merge(KPIS_MP, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
+MP_FB = pd.merge(KPIS_MP_FB, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
 MP_FB_NO = MP_FB[pd.isnull(MP_FB.llave_facebook)]
 #¿Cuantos cruzaron? 
 MP_FB = MP_FB[~pd.isnull(MP_FB.llave_facebook)]
 
 #FIC
-FB_FIC = pd.merge(Facebook, KPIS_FIC, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
+FB_FIC = pd.merge(Facebook, KPIS_FIC_FB, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
 FB_FIC_NO = FB_FIC[pd.isnull(FB_FIC.llave_ventas)]
 #¿Cuantos cruzaron?
 FB_FIC = FB_FIC[~pd.isnull(FB_FIC.llave_ventas)]
 
-FIC_FB = pd.merge(KPIS_FIC, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
+FIC_FB = pd.merge(KPIS_FIC_FB, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
 FIC_FB_NO = FIC_FB[pd.isnull(FIC_FB.llave_facebook)]
 #¿Cuantos cruzaron?
 FIC_FB = FIC_FB[~pd.isnull(FIC_FB.llave_facebook)]
@@ -215,10 +271,10 @@ if Escribir == 'si':
     creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
     client = gspread.authorize(creds)
     spr = client.open_by_url('https://docs.google.com/spreadsheets/d/1UfJanJuI1uwmD_VH3_e_aC1p6-LmTjNel-CQap9nk-I/edit#gid=0')
-    wks = spr.worksheet('OTROS')
+    wks = spr.worksheet('GICSA')
 
     filas = len(wks.get_all_values()) + 1
-    set_with_dataframe(wks, OTROS , row = filas ,include_column_header = True)
+    set_with_dataframe(wks, GICSA , row = filas ,include_column_header = True)
 
 else: 
     print("Ok!")    
