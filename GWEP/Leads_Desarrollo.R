@@ -80,6 +80,7 @@ Leads_Final$Fuente.de.Posible.cliente <- str_replace_all(Leads_Final$Fuente.de.P
                                                                                                   "Google Adwords"="Google",
                                                                                                   "Google orgánico"="Google"))
 
+
 #Función que realiza las 4 gráficas de Zoho
 Zoho <- function(desarrollo){
   #Colocamos el desarrollo de interés a gráficar
@@ -211,9 +212,30 @@ Zoho <- function(desarrollo){
 #############################
 #Información de las campañas#
 #############################
-Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas.csv")
-  
+#En los reportes se toma el mes no la fecha de inicio.
+Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final.csv")
+
+  #Metricas de Facebook# 
+  #Plataforma
+  #Nombre de la campaña
+  #Inicio del informe
+  #Fin del informe
+  #Impresiones
+  #Clics en el enlace
+  #Tipo_conversión
+  #Resultados
+  #Importe gastado (MXN)
+  #CPC (costo por clic en el enlace) (MXN)
+  #Costo por resultados	Nombre de la cuenta
+
+
+##El desarrollo se limpia a mano
+table(Plataformas$Fecha_Inicio)
+
 Plataformas_graficas <- function(desarrollo){
+  
+  specify_decimal <- function(x, k) as.numeric(trimws(format(round(x, k), nsmall=k)))
+  format_number <- function(x,k) formatC(as.numeric(x),format="f",digit=0,big.mark = ",")
   
   desarrollo <- desarrollo
     
@@ -234,10 +256,13 @@ Plataformas_graficas <- function(desarrollo){
   tmp_Fb$Fecha_Inicio <- as.Date(tmp_Fb$Fecha_Inicio, format = "%Y-%m-%d")
   tmp_Fb$Fecha_Inicio <- ymd(tmp_Fb$Fecha_Inicio)
   tmp_Fb['ym'] <- ymd(paste0(year(tmp_Fb$Fecha_Inicio),"-",month(tmp_Fb$Fecha_Inicio) ,"-01"))
-    
-  tmp_Go$Fecha_Inicio <- as.Date(tmp_Go$Fecha_Inicio, format = "%d/%m/%Y")
-  tmp_Go$Fecha_Inicio <- ymd(tmp_Go$Fecha_Inicio)
-  tmp_Go['ym'] <- ymd(paste0(year(tmp_Go$Fecha_Inicio),"-",month(tmp_Go$Fecha_Inicio) ,"-01"))
+  
+  tmp_Go$Fecha_Inicio <- str_replace_all(tmp_Go$Fecha_Inicio, c("ene"="01","feb"="02","mar"="03","abr"="04","may"="05","jun"="06",
+                                                                "jul"="07","ago"="08","sep"="09","oct"="10","nov"="11","dic"="12"))
+  
+  tmp_Go$Fecha_Inicio <- paste0("01-",tmp_Go$Fecha_Inicio)
+  tmp_Go$Fecha_Inicio <- as.Date(tmp_Go$Fecha_Inicio, format = "%d-%m-%y")
+  tmp_Go['ym'] <- ymd(tmp_Go$Fecha_Inicio)
     
   Plataformas <- rbind(tmp_Fb,tmp_Go) ; rm(tmp_Fb,tmp_Go)
   table(Plataformas$Desarrollo)
