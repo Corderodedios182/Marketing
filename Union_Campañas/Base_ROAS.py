@@ -152,9 +152,50 @@ for csv in Arch_FB:
 Facebook = pd.concat(Facebook)
 
 Facebook = Facebook.loc[:,('Archivo','Nombre de la cuenta','Nombre de la campaña','Mes','Inicio','Finalización','Divisa','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
-
-Facebook.columns = ('archivo','cuenta','campaña','mes','fecha_inicio','fecha_finalización','divisa','dinero_gastado','impresiones','clics')
 Facebook['plataforma'] = 'Facebook'
+Facebook.Mes
+    
+#Fechas 
+def Formato_Fechas(Base, Columna):
+
+    fechas = Base[Columna].astype(str).str.split(" - ",expand = True)
+    fechas = pd.DataFrame(fechas)
+    fechas.columns = ['inicio_reporte','fin_reporte']
+     
+    Base['inicio_reporte'] = fechas.iloc[:,0]
+    Base['fin_reporte'] = fechas.iloc[:,1]
+       
+    Base.inicio_reporte = Base.inicio_reporte.apply(lambda x: str(x).replace("['",""))
+    Base.fin_reporte = Base.fin_reporte.apply(lambda x: str(x).replace("']",""))
+    
+    Base.inicio_reporte = pd.to_datetime(Base.inicio_reporte,format = "%Y-%m-%d")
+    Base.fin_reporte = pd.to_datetime(Base.fin_reporte,format = "%Y-%m-%d")
+
+    return Base
+
+Facebook = Formato_Fechas(Facebook, 'Mes')
+
+    #Extracción del nombre para cruzarlo con ventas
+C_Facebook = Facebook.loc[:,'Nombre de la campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
+C_Facebook.columns = cols
+C_Facebook = C_Facebook[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
+
+Facebook['Llave_Facebook'] = C_Facebook ; del C_Facebook
+Facebook['Llave_Facebook'] = Facebook['Llave_Facebook'].str.strip()
+
+    #Columnas de interés
+Facebook.keys()
+Facebook = Facebook.loc[:,('Archivo','Nombre de la cuenta','Nombre de la campaña','Llave_Facebook','Mes','inicio_reporte','fin_reporte','Inicio','Finalización','Divisa','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
+Facebook.columns = ['Archivo','Nombre_Cuenta','Nombre_campaña','llave_facebook','mes','inicio_reporte','fin_reporte','Fecha_Inicio','Fecha_Fin','divisa','dinero_gastado','impresiones','clics_enlace']
+
+    #Se eliminan las campañas provenientes de estás cuentas puede que no mache con el MP
+Facebook = Facebook.loc[ ~( (Facebook.Nombre_Cuenta.str.contains('Adsocial'))  |  (Facebook.Nombre_Cuenta.str.contains('Dokkoi')) ) ]
+Facebook.llave_facebook = Facebook.llave_facebook.str.lower()
+Facebook.llave_facebook = Facebook.llave_facebook + str("_FB")
+
+#tmp = Facebook.groupby(['Nombre_Cuenta','llave_facebook','Nombre_campaña'], as_index = False).count()
+#tmp_0 = Facebook[Facebook['llave_facebook'] == '2001_gicsa_explanadapuebla_pi_mkt_FB']
+Facebook = Facebook.groupby(['Nombre_Cuenta','llave_facebook','inicio_reporte','fin_reporte'], as_index = False).sum()
 
 #-- Adwords -- #
 Arch_Adwords = [x for x in Archivos if "Adwords" in x]
@@ -202,9 +243,94 @@ Adform = Adform.loc[:,('archivo','cuenta','campaña','mes','fecha_inicio','fecha
 # -Unión de todo
 #
 ####
-Base_ROAS = pd.concat([Facebook, Adwords, Adform], axis = 0)
+####################################
+#Separación del MP ó FIC Plataforma#
+####################################
 
-Base_ROAS.plataforma.value_counts()
+FIC_FB = FIC[FIC.llave_ventas.str.contains('_FB')]
+MP_FB = MP[MP.llave_ventas.str.contains('_FB')]
+
+########
+#Cruzes#
+########
+#MP
+FB_MP = pd.merge(Facebook, MP_FB, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
+FB_MP_NO = FB_MP[pd.isnull(FB_MP.llave_ventas)]
+#¿Cuantos cruzaron?
+FB_MP = FB_MP[~pd.isnull(FB_MP.llave_ventas)]
+
+MP_FB = pd.merge(MP_FB, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
+MP_FB_NO = MP_FB[pd.isnull(MP_FB.llave_facebook)]
+#¿Cuantos cruzaron? 
+MP_FB = MP_FB[~pd.isnull(MP_FB.llave_facebook)]
+
+#FIC
+FB_FIC = pd.merge(Facebook, FIC_FB, how = 'left', left_on = 'llave_facebook', right_on = 'llave_ventas')
+FB_FIC_NO = FB_FIC[pd.isnull(FB_FIC.llave_ventas)]
+#¿Cuantos cruzaron?
+FB_FIC = FB_FIC[~pd.isnull(FB_FIC.llave_ventas)]
+
+FIC_FB = pd.merge(FIC_FB, Facebook, how = 'left', left_on = 'llave_ventas', right_on = 'llave_facebook')
+FIC_FB_NO = FIC_FB[pd.isnull(FIC_FB.llave_facebook)]
+#¿Cuantos cruzaron?
+FIC_FB = FIC_FB[~pd.isnull(FIC_FB.llave_facebook)]
+
+###########################
+#Validacion de lo faltante#
+###########################
+#FB_MP
+
+FB_MP_NO_1 = FB_MP_NO.llave_facebook.str.split("_", 10,expand = True)
+FB_MP_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+FB_MP_NO_1['archivo'] = 'FB_MP'
+FB_MP_NO_1['Nombre_Campaña'] = FB_MP_NO.llave_facebook
+
+MP_FB_NO_1 = MP_FB_NO.llave_ventas.str.split("_", 10,expand = True)
+MP_FB_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+MP_FB_NO_1['archivo'] = 'MP'
+MP_FB_NO_1['Nombre_Campaña'] = MP_FB_NO.llave_ventas
+
+Union = []
+Union.append(FB_MP_NO_1)
+Union.append(MP_FB_NO_1)
+
+#FB_FIC
+FB_FIC_NO_1 = FB_FIC_NO.llave_facebook.str.split("_", 10,expand = True)
+FB_FIC_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+FB_FIC_NO_1['archivo'] = 'FB_FIC'
+FB_FIC_NO_1['Nombre_Campaña'] = FB_FIC_NO.llave_facebook
+
+FIC_FB_NO_1 = FIC_FB_NO.llave_ventas.str.split("_", 10,expand = True)
+FIC_FB_NO_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2",""]
+FIC_FB_NO_1['archivo'] = 'FIC'
+FIC_FB_NO_1['Nombre_Campaña'] = FIC_FB_NO.llave_ventas
+
+Union.append(FB_FIC_NO_1)
+Union.append(FIC_FB_NO_1)
+Union = pd.concat(Union)
+
+Union["Nombre_Campaña"] = Union["Nombre_Campaña"].str.replace("_FB","")
+
+Union.archivo.value_counts()
+
+#Desglose por cliente
+OD = Union.loc[ Union.Cliente.str.contains('od', na = False) & ~Union.Cliente.str.contains('sodexo', na = False)]
+RS = Union.loc[ Union.Cliente.str.contains('rs', na = False)]
+THS = Union.loc[ Union.Cliente.str.contains('ths', na = False)]
+PETCO = Union.loc[ Union.Cliente.str.contains('petco', na = False)]
+GICSA = Union.loc[ Union.Cliente.str.contains('gicsa', na = False)]
+GWEP = Union.loc[ Union.Cliente.str.contains('gwep', na = False)]
+
+OD.shape[0] + RS.shape[0] + THS.shape[0] + PETCO.shape[0] + GICSA.shape[0] + GWEP.shape[0]
+
+OTROS = Union.loc[ ~Union.Cliente.str.contains('od', na = False) & ~Union.Cliente.str.contains('rs', na = False) & ~Union.Cliente.str.contains('sodexo', na = False) & ~Union.Cliente.str.contains('ths', na = False) &
+                  ~Union.Cliente.str.contains('petco', na = False) & ~Union.Cliente.str.contains('gicsa', na = False) & ~Union.Cliente.str.contains('gicsa', na = False) & ~Union.Cliente.str.contains('gwep', na = False)]
+
+
+
+#Base_ROAS = pd.concat([Facebook, Adwords, Adform], axis = 0)
+
+#Base_ROAS.plataforma.value_counts()
 
 ######################
 #Exportación a Sheets#
