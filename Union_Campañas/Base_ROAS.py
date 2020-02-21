@@ -20,15 +20,15 @@ Los Archivos se encuentran en: /home/carlos/Dropbox/ROAS 2020 (Cada mes se crea 
 #Paqueterías
 import os
 import pandas as pd
-
+import datetime
 #Formato números
-pd.set_option('display.float_format', lambda x: '%.5f' % x)
+pd.set_option('display.float_format', lambda x: '%.10f' % x)
 
 #Rutas
 #Ruta = input("Coloca la ruta donde se encuentran tus archivos: ") #Ejemplo: /home/carlos/Dropbox/ROAS 2020
 os.chdir('/home/carlos/Dropbox/ROAS 2020')
 #Mes = input("¿Qué mes deseas actualizar? " + str(os.listdir( )) + " : " )
-os.chdir('Enero')
+os.chdir('Febrero')
 Archivos = os.listdir()
 
 #############################
@@ -155,7 +155,7 @@ Facebook = Facebook.loc[:,('Archivo','Nombre de la cuenta','Nombre de la campañ
 Facebook['plataforma'] = 'Facebook'
 Facebook.Mes
     
-#Fechas 
+    #Fechas 
 def Formato_Fechas(Base, Columna):
 
     fechas = Base[Columna].astype(str).str.split(" - ",expand = True)
@@ -175,27 +175,32 @@ def Formato_Fechas(Base, Columna):
 
 Facebook = Formato_Fechas(Facebook, 'Mes')
 
+Facebook.dtypes
+Facebook['Mes'] = Facebook.inicio_reporte.apply(lambda x : x.month)
+
     #Extracción del nombre para cruzarlo con ventas
 C_Facebook = Facebook.loc[:,'Nombre de la campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
 C_Facebook.columns = cols
 C_Facebook = C_Facebook[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
 
-Facebook['Llave_Facebook'] = C_Facebook ; del C_Facebook
-Facebook['Llave_Facebook'] = Facebook['Llave_Facebook'].str.strip()
+Facebook['llave_plataformas'] = C_Facebook ; del C_Facebook
+Facebook['llave_plataformas'] = Facebook['llave_plataformas'].str.strip()
 
     #Columnas de interés
 Facebook.keys()
-Facebook = Facebook.loc[:,('Archivo','Nombre de la cuenta','Nombre de la campaña','Llave_Facebook','Mes','inicio_reporte','fin_reporte','Inicio','Finalización','Divisa','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
-Facebook.columns = ['Archivo','Nombre_Cuenta','Nombre_campaña','llave_facebook','mes','inicio_reporte','fin_reporte','Fecha_Inicio','Fecha_Fin','divisa','dinero_gastado','impresiones','clics_enlace']
+Facebook = Facebook.loc[:,('Archivo','Nombre de la cuenta','Nombre de la campaña','llave_plataformas','Mes','inicio_reporte','fin_reporte','Inicio','Finalización','Divisa','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
+Facebook.columns = ['Archivo','cuenta','Nombre_campaña','llave_plataformas','mes','inicio_reporte','fin_reporte','Fecha_Inicio','Fecha_Fin','divisa','dinero_gastado','impresiones','clics']
 
     #Se eliminan las campañas provenientes de estás cuentas puede que no mache con el MP
-Facebook = Facebook.loc[ ~( (Facebook.Nombre_Cuenta.str.contains('Adsocial'))  |  (Facebook.Nombre_Cuenta.str.contains('Dokkoi')) ) ]
-Facebook.llave_facebook = Facebook.llave_facebook.str.lower()
-Facebook.llave_facebook = Facebook.llave_facebook + str("_FB")
+Facebook = Facebook.loc[ ~( (Facebook.cuenta.str.contains('Adsocial'))  |  (Facebook.cuenta.str.contains('Dokkoi')) ) ]
+Facebook.llave_plataformas = Facebook.llave_plataformas.str.lower()
+Facebook.llave_plataformas = Facebook.llave_plataformas + str("_FB")
 
 #tmp = Facebook.groupby(['Nombre_Cuenta','llave_facebook','Nombre_campaña'], as_index = False).count()
 #tmp_0 = Facebook[Facebook['llave_facebook'] == '2001_gicsa_explanadapuebla_pi_mkt_FB']
-Facebook = Facebook.groupby(['Nombre_Cuenta','llave_facebook','inicio_reporte','fin_reporte'], as_index = False).sum()
+Facebook = Facebook.groupby(['Archivo','cuenta','llave_plataformas','mes'], as_index = False).sum()
+
+del Arch_FB, csv, tmp
 
 #-- Adwords -- #
 Arch_Adwords = [x for x in Archivos if "Adwords" in x]
@@ -215,11 +220,40 @@ for csv in Arch_Adwords:
 
 Adwords = pd.concat(Adwords).reset_index(drop = True)
 
-Adwords = Adwords.loc[:,('Archivo','Cuenta','Campaña','Mes','Fecha de inicio','Fecha de finalización',
+Adwords = Adwords.loc[:,('Archivo','Cuenta','Campa�a','Mes','Fecha de inicio','Fecha de finalizaci�n',
                            'Moneda','Costo','Impresiones','Clics')]
 
 Adwords.columns = ('archivo','cuenta','campaña','mes','fecha_inicio','fecha_finalización','divisa','dinero_gastado','impresiones','clics')
 Adwords['plataforma'] = 'Adwords'
+
+#Formato de Columnas
+
+    #Fechas
+
+#Las fechas salen del nombre del reporte y falta colocar las reglas de duracion de las fechas
+
+Adwords['fecha_inicio'] = pd.to_datetime(Adwords['fecha_inicio'], format='%Y-%m-%d')
+Adwords.fecha_finalización = Adwords.fecha_finalización.apply(lambda x : str(x).replace(' --','')).astype('str')
+Adwords['fecha_finalización'] = pd.to_datetime(Adwords['fecha_finalización'], format='%Y-%m-%d', errors = 'coerce')
+
+    #Extracción del nombre para cruzar con ventas
+
+C_Adwords = Adwords.loc[:,'campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
+C_Adwords.columns = cols
+C_Adwords = C_Adwords[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
+
+Adwords['llave_plataformas'] = C_Adwords ; del C_Adwords
+Adwords['llave_plataformas'] = Adwords['llave_plataformas'].str.lower()
+Adwords['llave_plataformas'] = Adwords['llave_plataformas'] + str("_SEM")
+
+    #Formato numerico
+Adwords.clics = Adwords.clics.apply(lambda x : str(x).replace(',','')).astype('int')
+Adwords.impresiones = Adwords.impresiones.apply(lambda x: str(x).replace(',','')).astype('int')
+Adwords.dinero_gastado = Adwords.dinero_gastado.apply(lambda x: str(x).replace(',','')).astype('float')
+
+Adwords = Adwords.groupby(['llave_plataformas','cuenta'], as_index = False).sum()
+
+del csv, fallas, tmp, Arch_Adwords
 
 #-- Adform --#
 Arch_Adform = [x for x in Archivos if "Adform" in x]
@@ -238,11 +272,47 @@ Adform['mes'] = ''
 
 Adform = Adform.loc[:,('archivo','cuenta','campaña','mes','fecha_inicio','fecha_finalización','divisa','dinero_gastado','impresiones','clics','plataforma')]
 
+    #Fechas 
+Adform.fecha_inicio = pd.to_datetime(Adform.fecha_inicio, format = "%Y-%m-%d")
+Adform.fecha_finalización = pd.to_datetime(Adform.fecha_finalización,format = "%Y-%m-%d")
+
+    #Extracción del nombre para cruzarlo con ventas
+C_Adform = Adform.loc[:,'campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
+C_Adform.columns = cols
+C_Adform = C_Adform[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
+
+Adform['llave_plataformas'] = C_Adform ; del C_Adform
+Adform['llave_plataformas'] = Adform['llave_plataformas'].str.strip()
+
+    #Se eliminan las campañas provenientes de estás cuentas puede que no mache con el MP
+#Facebook = Facebook.loc[ ~( (Facebook.Nombre_Cuenta.str.contains('Adsocial'))  |  (Facebook.Nombre_Cuenta.str.contains('Dokkoi')) ) ]
+Adform.llave_plataformas = Adform.llave_plataformas.str.lower()
+Adform.llave_plataformas = Adform.llave_plataformas + str("_DSP")
+
+    #Formato numerico
+Adform.clics = Adform.clics.apply(lambda x : str(x).replace(',','')).astype('int')
+Adform.impresiones = Adform.impresiones.apply(lambda x: str(x).replace(',','')).astype('int')
+Adform.dinero_gastado = Adform.dinero_gastado.apply(lambda x: str(x).replace(',','')).astype('float')
+
+Adform = Adform.groupby(['llave_plataformas','cuenta'], as_index = False).sum()
+
+del Arch_Adform
+
 #############################
 #Unión de las Bases
 # -Unión de todo
 #
+Facebook.keys() 
+Adwords.keys()
+Adform.keys()
+
+Plataformas = pd.concat([Facebook, Adwords, Adform])
+
+
+tmp = Plataformas[Plataformas.llave_plataformas.str.contains('_DSP')] #Validación
+
 ####
+
 ####################################
 #Separación del MP ó FIC Plataforma#
 ####################################
