@@ -27,9 +27,8 @@ pd.set_option('display.float_format', lambda x: '%.10f' % x)
 
 #Rutas
 #Ruta = input("Coloca la ruta donde se encuentran tus archivos: ") #Ejemplo: /home/carlos/Dropbox/ROAS 2020
-os.chdir('/home/carlos/Dropbox/ROAS 2020')
+os.chdir('/home/carlos/Dropbox/ROAS 2020/Enero')
 #Mes = input("¿Qué mes deseas actualizar? " + str(os.listdir( )) + " : " )
-os.chdir('Enero')
 Archivos = os.listdir()
 
 #############################
@@ -44,11 +43,16 @@ Archivos = os.listdir()
 #-- MP_FIC (KPI) --#
 
 Arch_MP_FIC = [x for x in Archivos if "KPI" in x]
-#MP
+#MP Son unicos
 MP = pd.read_excel(Arch_MP_FIC[0], sheet_name = 'KPIS MP 2020', skiprows = 2)
 MP.loc[:,'NOMENCLATURA'] = MP.loc[:,'NOMENCLATURA'].str.lower()
 MP['Archivo'] = Arch_MP_FIC[0] 
 
+#Validaciones MP
+#MP.shape[0] - MP[MP.Versión.str.contains('VC')].shape[0]
+
+#Filtro sobre el MP 
+#MP = MP[~MP['Versión'].str.contains('VC')]
 
 #FIC
 FIC = pd.read_excel(Arch_MP_FIC[0], sheet_name = 'KPIS FIC 2020', skiprows = 2)
@@ -106,30 +110,57 @@ MP["llave_ventas"].str.strip()
 FIC['llave_ventas'] = FIC.loc[:,'NOMENCLATURA'] + str("_") + FIC['Plt']
 FIC["llave_ventas"].str.strip()
 
-MP = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
-FIC = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CAMPAÑA','CLIENTE','MARCA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
-
-#Filtro sobre el MP
-MP = MP[~MP['Versión'].str.contains('VC')]
+MP = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
+FIC = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
 
 #Campañas unicas
-MP = MP.groupby(['llave_ventas','Plt','Inicio','Fin'], as_index = False).agg({'Costo Planeado':'mean',
+MP = MP.groupby(['CLIENTE','MARCA','llave_ventas','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).agg(
+                                                                               {'Costo Planeado':'mean',
                                                                                'KPI Planeado':'sum',
                                                                                'Serving':'sum',
                                                                                'Inversión Plataforma':'sum',
                                                                                'Inversión Total':'sum',
                                                                                'NOMENCLATURA':'count'})
-
-MP.groupby(['Plt']).count()['llave_ventas'].reset_index()
-
-FIC = FIC.groupby(['llave_ventas','Plt','Inicio','Fin'], as_index = False).agg({'Inversión AdOps':'sum',
+MP['Plan'] = 'MP'
+#Se tienen estos duplicados en el MP soló es necesario eliminarlos o ajustarlos
+Duplicados_MP = MP[MP.NOMENCLATURA == 2]
+#Campañas unicas
+FIC = FIC.groupby(['CLIENTE','MARCA','llave_ventas','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).agg({'Inversión AdOps':'sum',
                                                                                'Operativo AdOps':'sum',
                                                                                'Serving AdOps':'sum',
-                                                                               'Costo Operativo':'sum',
+                                                                               'Costo Operativo':'mean',
                                                                                'NOMENCLATURA':'count'})
-FIC.groupby(['Plt']).count()['llave_ventas'].reset_index()
+FIC['Plan'] = 'FIC'
+#Se tienen estos duplicados en el FIC soló es necesario eliminarlos o ajustarlos
+Duplicados_FIC = FIC[FIC.NOMENCLATURA == 2]
 
-del Arch_MP_FIC
+#Cruze MP y FIC
+
+#Primero lo que debe de cruzar
+A = MP
+B = FIC
+
+MP_FIC = pd.merge(A, B, how = 'left', left_on = 'llave_ventas', right_on = 'llave_ventas')
+
+#Analisis de lo que no debe cruzar
+MP_FIC[MP_FIC.Plan_y.isnull() & MP_FIC.Versión_x.str.contains('VC')].Versión_x.value_counts()
+Faltantes_FIC = MP_FIC[MP_FIC.Plan_y.isnull() & ~MP_FIC.Versión_x.str.contains('VC')]
+
+#Me quedo con lo que cruzo
+MP_FIC = MP_FIC[~MP_FIC.Plan_y.isnull()]
+
+#Base final MP_FIC
+MP_FIC = pd.merge(A, B, how = 'left', left_on = 'llave_ventas', right_on = 'llave_ventas') ; del A,B
+
+MP_FIC.keys()
+
+MP_FIC = MP_FIC.iloc[:, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,15,24,25,26,27,28,29]]
+
+MP_FIC.columns = ['cliente','marca','llave_ventas','plataforma_abreviacion','plataforma','versión','fecha_inicio_plan',
+                  'fecha_fin_plan','mes_plan','costo_planeado','kpi_planeado','serving','inversión_plataforma','inversión_total'
+                  ,'plan_x','inversión_AdOps','Operativo_AdOps','Serving_AdOps','costo_operativo','conteo_MP_FIC','plan_y']
+
+
 #############################
 #Importación de las bases
 #   -Limpieza de las bases, formatos, fechas, agrupaciones
@@ -141,7 +172,16 @@ del Arch_MP_FIC
 ############################
 
 #-- Facebook -- #
-Arch_FB = [x for x in Archivos if "FB" in x]
+import glob
+Mes = 'Febrero'
+
+Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
+Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
+
+#Archivos = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Mensual/*.csv')
+#FB_MP = MP_FIC[MP_FIC.plataforma_abreviacion.str.contains('FB')]
+
+Arch_FB = [x for x in Archivos_csv if "FB" in x]
 
 Facebook = []
 
@@ -153,8 +193,14 @@ for csv in Arch_FB:
     
 Facebook = pd.concat(Facebook)
 
+#Revisiones rápidas
+Facebook.Archivo.value_counts()
+Facebook.keys()
+#Columna de interés
 Facebook = Facebook.loc[:,('Archivo','Nombre de la cuenta','Nombre de la campaña','Mes','Inicio','Finalización','Divisa','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
 Facebook['plataforma'] = 'Facebook'
+Facebook = Facebook.reset_index()
+#Con esta columna extraemos la fecha del reporte
 Facebook.Mes
     
     #Fechas 
@@ -190,10 +236,10 @@ Facebook['llave_plataformas'] = Facebook['llave_plataformas'].str.strip()
 
     #Columnas de interés
 Facebook.keys()
-Facebook = Facebook.loc[:,('Archivo','Nombre de la cuenta','Nombre de la campaña','llave_plataformas','Mes','inicio_reporte','fin_reporte',
+Facebook = Facebook.loc[:,('Archivo','plataforma','Nombre de la cuenta','Nombre de la campaña','llave_plataformas','Mes','inicio_reporte','fin_reporte',
                            'Inicio','Finalización','Divisa','Importe gastado (MXN)','Impresiones','Clics en el enlace')]
 
-Facebook.columns = ['archivo','cuenta','nombre_campaña','llave_plataformas','mes','inicio_reporte','fin_reporte',
+Facebook.columns = ['archivo','plataforma','cuenta','nombre_campaña','llave_plataformas','mes','inicio_reporte','fin_reporte',
                     'fecha_inicio','fecha_fin','divisa','dinero_gastado','impresiones','clics']
 
     #Se eliminan las campañas provenientes de estás cuentas puede que no mache con el MP
@@ -201,14 +247,22 @@ Facebook = Facebook.loc[ ~( (Facebook.cuenta.str.contains('Adsocial'))  |  (Face
 Facebook.llave_plataformas = Facebook.llave_plataformas.str.lower()
 Facebook.llave_plataformas = Facebook.llave_plataformas + str("_FB")
 
-#tmp_0 = Facebook[Facebook['llave_facebook'] == '2001_gicsa_explanadapuebla_pi_mkt_FB']
-#Facebook_0 = Facebook.groupby(['archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte','fecha_inicio','fecha_fin'], as_index = False).sum()
-Facebook = Facebook.groupby(['archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte'], as_index = False).sum()
+Facebook['conteo'] = 1
+Facebook['divisa'] = 'mxn'
 
+
+#Facebook_0 = Facebook.groupby(['archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte','fecha_inicio','fecha_fin'], as_index = False).sum()
+Facebook = Facebook.groupby(['plataforma','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte'], as_index = False).agg({
+                                                                               'dinero_gastado':'sum',
+                                                                               'impresiones':'sum',
+                                                                               'clics':'sum',
+                                                                               'conteo':'count'})
+#Validación
+#tmp_0 = Facebook[Facebook['llave_plataformas'].str.contains('ao-mkt')]
 del Arch_FB, csv, tmp
 
 #-- Adwords -- #
-Arch_Adwords = [x for x in Archivos if "Adwords" in x]
+Arch_Adwords = [x for x in Archivos_csv if "Adwords" in x]
 
 Adwords = []
 fallas = []
@@ -247,7 +301,7 @@ del Fechas, csv, fallas, fechas, tmp
 Adwords['Fecha de inicio'] =  pd.to_datetime(Adwords.loc[:,'Fecha de inicio'],errors='ignore',
                               format='%Y-%m-%d')
 #ok
-Adwords['Fecha de finalizaci�n'] =  pd.to_datetime(Adwords['Fecha de finalizaci�n'], errors = 'coerce',
+Adwords['Fecha de finalizaci�n'] =  pd.to_datetime(Adwords['Fecha de finalización'], errors = 'coerce',
                               format='%Y-%m-%d')
 #ok
 Adwords['inicio_reporte'] =  pd.to_datetime(Adwords['inicio_reporte'],
@@ -259,7 +313,7 @@ Adwords['fin_reporte'] =  pd.to_datetime(Adwords['fin_reporte'],errors='coerce',
 
 Adwords.keys()
 
-Adwords = Adwords.loc[:,('Archivo','Cuenta','Campa�a','Mes','Fecha de inicio','Fecha de finalizaci�n','inicio_reporte','fin_reporte',
+Adwords = Adwords.loc[:,('Archivo','Cuenta','Campaña','Mes','Fecha de inicio','Fecha de finalización','inicio_reporte','fin_reporte',
                            'Moneda','Costo','Impresiones','Clics')]
 
 Adwords.columns = ('archivo','cuenta','campaña','mes','fecha_inicio','fecha_finalización','inicio_reporte','fin_reporte','divisa','dinero_gastado','impresiones','clics')
@@ -282,10 +336,13 @@ Adwords.clics = Adwords.clics.apply(lambda x : str(x).replace(',','')).astype('i
 Adwords.impresiones = Adwords.impresiones.apply(lambda x: str(x).replace(',','')).astype('int')
 Adwords.dinero_gastado = Adwords.dinero_gastado.apply(lambda x: str(x).replace(',','')).astype('float')
 
-Adwords = Adwords.groupby(['archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte'], as_index = False).sum()
+Adwords['plataforma'] = 'Adwords'
+Adwords['conteo'] = 1
+
+Adwords = Adwords.groupby(['plataforma','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte'], as_index = False).sum()
 
 #-- Adform --#
-Arch_Adform = [x for x in Archivos if "Adform" in x]
+Arch_Adform = [x for x in Archivos_xlsx if "Adform" in x]
 
 Adform = pd.read_excel(Arch_Adform[0], sheet_name = 'Sheet', skiprows = 2)
 Adform['Archivo'] = Arch_Adform[0] 
@@ -340,7 +397,9 @@ Adform.clics = Adform.clics.apply(lambda x : str(x).replace(',','')).astype('int
 Adform.impresiones = Adform.impresiones.apply(lambda x: str(x).replace(',','')).astype('int')
 Adform.dinero_gastado = Adform.dinero_gastado.apply(lambda x: str(x).replace(',','')).astype('float')
 
-Adform = Adform.groupby(['archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte'], as_index = False).sum()
+Adform['conteo'] = 1
+
+Adform = Adform.groupby(['plataforma','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte'], as_index = False).sum()
 
 del Arch_Adform
 
@@ -352,47 +411,33 @@ Facebook.keys()
 Adwords.keys()
 Adform.keys()
 
-Plataformas = pd.concat([Facebook, Adwords, Adform])
+Plataformas = pd.concat([Facebook, Adwords,Adform])
 
-tmp = Plataformas[Plataformas.llave_plataformas.str.contains('_SEM')] #Validación
+tmp = Plataformas[Plataformas.llave_plataformas.str.contains('_SEM')] #Validación alguna plataforma
 
 del fechas, Archivos, Arch_Adwords, tmp
 
 ####################################
 #Separación del MP ó FIC Plataforma#
 ####################################
-#MP
-MP_PLT = pd.merge(MP, Plataformas, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
+#Solo lo que tenemos en el MP
+MP_PLT = pd.merge(MP_FIC, Plataformas, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
+
+#MP_PLT.plataforma.value_counts()
+
+#MP_PLT = MP_PLT.fillna(0)
+
+#Validaciones
+tmp_f = Facebook[Facebook.llave_plataformas.str.contains('FB')]
+a = tmp_f.llave_plataformas.value_counts()
+
+tmp_mp = MP_PLT[MP_PLT.llave_plataformas.str.contains('FB', na = False)]
+b = tmp_mp.llave_plataformas.value_counts()
+
+
+A = MP_PLT[MP_PLT.llave_ventas == '2001_petco_hills_ppf_pfm_FB']
+B = MP_PLT[MP_PLT.llave_ventas == '2001_gicsa_explanadapachuca_pi_mkt_FB']
 
 #########################################
 #Escritura de los datos en Google Sheets#
 #########################################
-import os
-import gspread
-from datetime import datetime
-from oauth2client.service_account import ServiceAccountCredentials
-from gspread_dataframe import set_with_dataframe #,get_as_dataframe
-
-Base_master_final = MP_PLT
-
-Escribir = input("Deseas escribir los datos en sheets si/no : ")
-
-if Escribir == 'si':
-    os.chdir('/home/carlos/Documentos/3_Adsocial')
-    os.listdir()
-    #Autentificacion con google cloud platform correo analytics.adsocial@gmail.com
-    scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name("creds.json", scope)
-    client = gspread.authorize(creds)
-
-    Base_master_final['ultima_actualizacion'] = datetime.now()
-    
-    sh = client.open('Validación Nomeclatura Adsocial') #Recordar que el archivo que deseamos leer tiene que tener el correo de la api como persona compartida
-    worksheet = sh.get_worksheet(8) #Base_master_python
-
-    filas = len(worksheet.get_all_values()) + 1
-    set_with_dataframe(worksheet, Base_master_final, row = filas, include_column_header = True)
-
-else: 
-    print("Ok!")    
-
