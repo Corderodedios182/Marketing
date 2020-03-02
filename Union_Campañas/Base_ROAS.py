@@ -22,29 +22,28 @@ import os
 import pandas as pd
 import datetime
 import re
+
+#Escritura_Sheets es un script de apoyo que contiene la función Escritura para el google sheets
+from librerias import Escritura_Sheets
+
 #Formato números
 pd.set_option('display.float_format', lambda x: '%.10f' % x)
 
-#Rutas
-#Ruta = input("Coloca la ruta donde se encuentran tus archivos: ") #Ejemplo: /home/carlos/Dropbox/ROAS 2020
-os.chdir('/home/carlos/Dropbox/ROAS 2020/Enero')
-#Mes = input("¿Qué mes deseas actualizar? " + str(os.listdir( )) + " : " )
+os.chdir('/home/carlos/Dropbox/ROAS 2020')
 Archivos = os.listdir()
 
-#############################
+#################################################################
 #Importación de las bases
-#   -Estandarización
-#   -Reglas de Fechas
-#   -Columnas a ocupar
 #   -Ver el nombre de la campaña por rmnt o pi (caso especial)
 #
-############################
+#################################################################
 
 #-- MP_FIC (KPI) --#
 
 Arch_MP_FIC = [x for x in Archivos if "KPI" in x]
 #MP Son unicos
 MP = pd.read_excel(Arch_MP_FIC[0], sheet_name = 'KPIS MP 2020', skiprows = 2)
+MP = MP.fillna('')
 MP.loc[:,'NOMENCLATURA'] = MP.loc[:,'NOMENCLATURA'].str.lower()
 MP['Archivo'] = Arch_MP_FIC[0] 
 
@@ -56,6 +55,7 @@ MP['Archivo'] = Arch_MP_FIC[0]
 
 #FIC
 FIC = pd.read_excel(Arch_MP_FIC[0], sheet_name = 'KPIS FIC 2020', skiprows = 2)
+FIC = FIC.fillna('')
 FIC.loc[:,'NOMENCLATURA'] = FIC.loc[:,'NOMENCLATURA'].str.lower()
 FIC['Archivo'] = Arch_MP_FIC[0] 
 
@@ -122,7 +122,8 @@ MP = MP.groupby(['CLIENTE','MARCA','llave_ventas','Plt','Plataforma','Versión',
                                                                                'Inversión Total':'sum',
                                                                                'NOMENCLATURA':'count'})
 MP['Plan'] = 'MP'
-#Se tienen estos duplicados en el MP soló es necesario eliminarlos o ajustarlos
+#Se tienen estos duplicados en el MP soló es necesario eliminarlos o ajustarlos, 
+#Los duplicados pueden existir por el nombre de la campaña es distinto pero la nomeclatura es la misma
 Duplicados_MP = MP[MP.NOMENCLATURA == 2]
 #Campañas unicas
 FIC = FIC.groupby(['CLIENTE','MARCA','llave_ventas','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).agg({'Inversión AdOps':'sum',
@@ -134,23 +135,25 @@ FIC['Plan'] = 'FIC'
 #Se tienen estos duplicados en el FIC soló es necesario eliminarlos o ajustarlos
 Duplicados_FIC = FIC[FIC.NOMENCLATURA == 2]
 
+#Importación google sheets
+Escritura_Sheets.Escritura(Duplicados_MP, 0, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(Duplicados_FIC, 1, header = True, Escribir = 'no')
+
 #Cruze MP y FIC
-
 #Primero lo que debe de cruzar
-A = MP
-B = FIC
-
-MP_FIC = pd.merge(A, B, how = 'left', left_on = 'llave_ventas', right_on = 'llave_ventas')
+MP_FIC = pd.merge(MP, FIC, how = 'left', left_on = 'llave_ventas', right_on = 'llave_ventas')
 
 #Analisis de lo que no debe cruzar
 MP_FIC[MP_FIC.Plan_y.isnull() & MP_FIC.Versión_x.str.contains('VC')].Versión_x.value_counts()
 Faltantes_FIC = MP_FIC[MP_FIC.Plan_y.isnull() & ~MP_FIC.Versión_x.str.contains('VC')]
 
+Escritura_Sheets.Escritura(Faltantes_FIC, 3, header = True, Escribir = 'no') 
+
 #Me quedo con lo que cruzo
 MP_FIC = MP_FIC[~MP_FIC.Plan_y.isnull()]
 
 #Base final MP_FIC
-MP_FIC = pd.merge(A, B, how = 'left', left_on = 'llave_ventas', right_on = 'llave_ventas') ; del A,B
+MP_FIC = pd.merge(MP, FIC, how = 'left', left_on = 'llave_ventas', right_on = 'llave_ventas')
 
 MP_FIC.keys()
 
@@ -160,6 +163,7 @@ MP_FIC.columns = ['cliente','marca','llave_ventas','plataforma_abreviacion','pla
                   'fecha_fin_plan','mes_plan','costo_planeado','kpi_planeado','serving','inversión_plataforma','inversión_total'
                   ,'plan_x','inversión_AdOps','Operativo_AdOps','Serving_AdOps','costo_operativo','conteo_MP_FIC','plan_y']
 
+Escritura_Sheets.Escritura(MP_FIC, 2, header = True, Escribir = 'no') 
 
 #############################
 #Importación de las bases
@@ -173,12 +177,14 @@ MP_FIC.columns = ['cliente','marca','llave_ventas','plataforma_abreviacion','pla
 
 #-- Facebook -- #
 import glob
-Mes = 'Febrero'
+Mes = 'Enero'
 
-Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
-Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
+#Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
+#Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
 
-#Archivos = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Mensual/*.csv')
+Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Mensual/*.csv')
+Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Mensual/*.xlsx')
+
 #FB_MP = MP_FIC[MP_FIC.plataforma_abreviacion.str.contains('FB')]
 
 Arch_FB = [x for x in Archivos_csv if "FB" in x]
@@ -269,7 +275,7 @@ fallas = []
 
 for csv in Arch_Adwords:
     try:
-        tmp = pd.read_csv(csv, sep = ',', skiprows = 2)
+        tmp = pd.read_csv(csv, sep = ',', skiprows = 2, encoding='utf-8')
         tmp['Archivo'] = csv
         #Extreamos las fechas del nombre del reporte
         Fechas = list(tmp.Archivo.unique())
@@ -297,11 +303,13 @@ Adwords = pd.concat(Adwords).reset_index(drop = True)
 del Fechas, csv, fallas, fechas, tmp
     #Formato correcto para trabajar con las fechas
 
+Adwords = Adwords.rename(columns = {'Campa�a':'Campaña', 'Fecha de finalizaci�n':'Fecha de finalización'})
+
 #ok
 Adwords['Fecha de inicio'] =  pd.to_datetime(Adwords.loc[:,'Fecha de inicio'],errors='ignore',
                               format='%Y-%m-%d')
 #ok
-Adwords['Fecha de finalizaci�n'] =  pd.to_datetime(Adwords['Fecha de finalización'], errors = 'coerce',
+Adwords['Fecha de finalización'] =  pd.to_datetime(Adwords['Fecha de finalización'], errors = 'coerce',
                               format='%Y-%m-%d')
 #ok
 Adwords['inicio_reporte'] =  pd.to_datetime(Adwords['inicio_reporte'],
@@ -407,11 +415,16 @@ del Arch_Adform
 #Unión de las Bases
 # -Unión de todo
 #
-Facebook.keys() 
-Adwords.keys()
-Adform.keys()
+Facebook.shape[0] + Adwords.shape[0] + Adform.shape[0]
 
 Plataformas = pd.concat([Facebook, Adwords,Adform])
+
+#Semanal
+#Escritura_Sheets.Escritura(Plataformas, 4, header = True, Escribir = 'no') 
+
+#Mensual
+#Escritura_Sheets.Escritura(Plataformas, 5, header = True, Escribir = 'si') 
+
 
 tmp = Plataformas[Plataformas.llave_plataformas.str.contains('_SEM')] #Validación alguna plataforma
 
@@ -422,6 +435,19 @@ del fechas, Archivos, Arch_Adwords, tmp
 ####################################
 #Solo lo que tenemos en el MP
 MP_PLT = pd.merge(MP_FIC, Plataformas, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
+MP_PLT = MP_PLT.sort_values(['cliente','marca','llave_ventas','fecha_inicio_plan','plataforma_y'])
+
+#Semanal
+#Escritura_Sheets.Escritura(MP_PLT, 6, header = True, Escribir = 'si') 
+
+#Mensual
+Escritura_Sheets.Escritura(MP_PLT, 8, header = True, Escribir = 'si')
+
+#Información que no cruzo
+NO_CRUZO = MP_PLT[MP_PLT.plataforma_y.isnull()]
+NO_CRUZO = NO_CRUZO.sort_values(['llave_ventas'])
+
+Escritura_Sheets.Escritura(NO_CRUZO, 9, header = True, Escribir = 'si')
 
 #MP_PLT.plataforma.value_counts()
 
@@ -437,7 +463,3 @@ b = tmp_mp.llave_plataformas.value_counts()
 
 A = MP_PLT[MP_PLT.llave_ventas == '2001_petco_hills_ppf_pfm_FB']
 B = MP_PLT[MP_PLT.llave_ventas == '2001_gicsa_explanadapachuca_pi_mkt_FB']
-
-#########################################
-#Escritura de los datos en Google Sheets#
-#########################################
