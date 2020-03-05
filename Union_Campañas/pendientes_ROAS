@@ -1,0 +1,26 @@
+ -Ver como cruza la información de Adform
+ -Ver como cruza la información de Adwords
+	*La fecha sale del reporte y coloco las reglas de duración
+
+ -Correr para Enero y Febrero, para unir todo.
+	*Ejercicios semanales y mensuales
+	*validar lo que esta arriba no se encuentra duplicado
+
+ -Validación de cifras (Trabajando)
+	*¿Como esta sumando las cifras, no tengo duplicados?
+	*Formula dinero gastado Adform
+	*Agregar conversiones y sales de adform: CPM*Impresiones/1000
+
+ -Validación de cruzes
+	*Saber que cruza correctamente
+	*Saber que no cruza
+
+ -Casos especiales
+	*rmnt a pmi
+	*Agregar la separación de la llave
+	*Analizar si vale la pena crear clases
+
+ 
+
+
+

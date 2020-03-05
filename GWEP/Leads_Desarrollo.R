@@ -20,27 +20,33 @@ Lead_2019 <- read.csv('Documentos/3_Adsocial/GWEP/Data/Reporte/Lead_2019.csv', s
 Lead_2019$Hora.de.creación  <- as.Date(Lead_2019$Hora.de.creación, format = "%Y-%m-%d")
 Lead_2019$ym  <- as.Date(Lead_2019$ym, format = "%Y-%m-%d")
   
-#Mes actual
-Enero <- read.csv('Documentos/3_Adsocial/GWEP/Data/Reporte/TEST_AdSocial_Enero.csv', stringsAsFactors = FALSE, skip = 1)
-  
-Enero_2020 <- Enero %>% 
+#Mes actual del reporte que llega al correo solo se toma el mes corriendo.
+#Enero <- read.csv('Documentos/3_Adsocial/GWEP/Data/Reporte/TEST_AdSocial_Enero.csv', stringsAsFactors = FALSE, skip = 1)
+Febrero <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/TEST_AdSocial_Febrero.csv', stringsAsFactors = FALSE, skip = 1)
+
+#Se debe hacer una limpieza manual sobre las fechas
+
+Febrero_2020 <- Febrero %>% 
     select(Fuente.de.Posible.cliente, Estado.de.Posible.cliente, Desarrollo, Hora.de.creación) %>%
-    mutate(Archivo = 'TEST_Adsocial_Enero.csv',
-           Hora.de.creación = ymd(as.Date(Enero$Hora.de.creación, format = "%d/%m/%Y")))
+    mutate(Archivo = 'TEST_Adsocial_Febrero.csv',
+           Hora.de.creación = ymd(as.Date(Febrero$Hora.de.creación, format = "%d/%m/%Y")))
   
-Enero_2020 <- Enero_2020 %>%
-    mutate(ym = ymd(paste0(year(Enero_2020$Hora.de.creación),"-",month(Enero_2020$Hora.de.creación) ,"-01")))
+Febrero_2020 <- Febrero_2020 %>%
+    mutate(ym = ymd(paste0(year(Febrero_2020$Hora.de.creación),"-",month(Febrero_2020$Hora.de.creación) ,"-01")))
   
-Enero_2020 <- filter(Enero_2020, Enero_2020$ym == '2020-01-01')
+Febrero_2020 <- filter(Febrero_2020, Febrero_2020$ym == '2020-02-01')
   
-Enero_2020$Hora.de.creación  <- as.Date(Enero_2020$Hora.de.creación, format = "%Y-%m-%d")
-Enero_2020$ym  <- as.Date(Enero_2020$ym, format = "%Y-%m-%d")
-  
+Febrero_2020$Hora.de.creación  <- as.Date(Febrero_2020$Hora.de.creación, format = "%Y-%m-%d")
+Febrero_2020$ym  <- as.Date(Febrero_2020$ym, format = "%Y-%m-%d")
+
+Febrero_2020$ym <- as.character(Febrero_2020$ym)
+Febrero_2020$Hora.de.creación <- as.character(Febrero_2020$Hora.de.creación)
+
 str(Enero_2020)
 str(Lead_2019)
 
 #Union historico con mes actual
-Leads_Final <- rbind(Lead_2019, Enero_2020)
+#Leads_Final <- rbind(Lead_2019, Enero_2020)
 #write.csv(Leads_Final,"Documentos/3_Adsocial/GWEP/Data/Reporte/Leads_Final.csv", row.names = FALSE)
 
 ################################################################################
@@ -49,12 +55,24 @@ Leads_Final <- rbind(Lead_2019, Enero_2020)
 #implementar mejores prácticas para la limpieza
 ################################################################################
 #Hubo varias limpiezas de los archivos 2019 y enero 2020
+#Sobre este archivo vamos agregando los meses   
 Leads_Final <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Leads_Final.csv', stringsAsFactors = FALSE)
+table(Leads_Final$Archivo)
+
+Leads_Final <- rbind(Leads_Final, Febrero_2020)
+table(Leads_Final$Archivo)
+table(Leads_Final$ym)
+table(Leads_Final$Hora.de.creación)
+write.csv(Leads_Final, "/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Leads_Final_Febrero.csv")
+
+Leads_Final <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Leads_Final_Febrero.csv', stringsAsFactors = FALSE)
+table(Leads_Final$Archivo)
 
 Leads_Final$Hora.de.creación <-as.Date(Leads_Final$Hora.de.creación, format = "%Y-%m-%d")
 Leads_Final$Hora.de.creación <- ymd(Leads_Final$Hora.de.creación)
 Leads_Final['ym'] <- ymd(paste0(year(Leads_Final$Hora.de.creación),"-",month(Leads_Final$Hora.de.creación) ,"-01"))
 
+table(Leads_Final$ym)
 head(select(Leads_Final, ym, Hora.de.creación, Desarrollo, Fuente.de.Posible.cliente, Estado.de.Posible.cliente, Archivo))
 
 #Funciones que ayudan al formato de los números
@@ -215,6 +233,39 @@ Zoho <- function(desarrollo){
 #En los reportes se toma el mes no la fecha de inicio.
 Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final.csv")
 
+Aurum <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Febrero/Aurum-Campañas-1-feb-2020-29-feb-2020.csv')
+Aurum['Desarollo'] <- 'Aurum'
+Aurum['Archivo'] <- 'Aurum-Campañas-1-feb-2020-29-feb-2020.csv'
+cumbres <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Febrero/Cumbres-Herradura-Campañas-1-feb-2020-29-feb-2020.csv')
+cumbres['Desarollo'] <- 'Cumbres Herradura'
+cumbres['Archivo'] <- 'Cumbres-Herradura-Campañas-1-feb-2020-29-feb-2020.csv'
+el_cortijo <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Febrero/El-Cortijo-Residencial-Campañas-1-feb-2020-29-feb-2020.csv')
+el_cortijo['Desarollo'] <- 'El Cortijo'
+el_cortijo['Archivo'] <- 'El-Cortijo-Residencial-Campañas-1-feb-2020-29-feb-2020.csv'
+parque_hacienda <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Febrero/Parque-Hacienda-Campañas-1-feb-2020-29-feb-2020.csv')
+parque_hacienda['Desarollo'] <- 'Parque Hacienda'
+parque_hacienda['Archivo'] <- 'Parque-Hacienda-Campañas-1-feb-2020-29-feb-2020.csv'
+real_lutecia <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Febrero/Real-de-Lutecia-Campañas-1-feb-2020-29-feb-2020.csv')
+real_lutecia['Desarollo'] <- 'Real de Lutecia'
+real_lutecia['Archivo'] <- 'Real-de-Lutecia-Campañas-1-feb-2020-29-feb-2020.csv'
+reserva_sur <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Febrero/Reserva-del-Sur-Campañas-1-feb-2020-29-feb-2020.csv')
+reserva_sur['Desarollo'] <- 'Reserva del sur'
+reserva_sur['Archivo'] <- 'Reserva-del-Sur-Campañas-1-feb-2020-29-feb-2020.csv'
+
+el_cortijo["Clientes.potenciales.en.el.sitio.web"] <- 0
+
+Facebook <- rbind(Aurum, cumbres, el_cortijo, parque_hacienda, real_lutecia, reserva_sur)
+
+names(Facebook)
+
+Facebook['Plataforma'] <- 'Facebook'
+Facebook['Tipo_conversión'] <- ''
+
+Facebook <- Facebook %>% select(Plataforma, Nombre.de.la.campaña, Inicio.del.informe, Fin.del.informe, Impresiones, Clics.en.el.enlace, Tipo_conversión, Resultados,
+                                Importe.gastado..MXN., CPC..costo.por.clic.en.el.enlace...MXN., Costo.por.resultados, Desarollo, Archivo)
+table(Facebook$Desarollo)
+table(Facebook$Archivo)
+
   #Metricas de Facebook# 
   #Plataforma
   #Nombre de la campaña
@@ -228,9 +279,14 @@ Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final.
   #CPC (costo por clic en el enlace) (MXN)
   #Costo por resultados	Nombre de la cuenta
 
+#Facebook y Google los pego a mano
+write.csv(Facebook, "/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Febrero/Facebook_Febrero.csv")
 
 ##El desarrollo se limpia a mano
 table(Plataformas$Fecha_Inicio)
+
+#Se pega manual la nueva información
+Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final.csv")
 
 Plataformas_graficas <- function(desarrollo){
   
@@ -372,7 +428,7 @@ Plataformas_graficas <- function(desarrollo){
   }
 
 #Ruta donde dejamos los nuevos archivos
-setwd("/home/carlos/Documentos/3_Adsocial/GWEP/Graficas/Por_Desarrollo_Enero/")
+setwd("/home/carlos/Documentos/3_Adsocial/GWEP/Graficas/Por_Desarrollo_Febrero/")
   
 #Tablas resumen integrarlas a las funciones.
 write.csv(data.frame(Zoho("Aurum")[2]),paste0("", "Aurum", "_LeadInterés.csv"), row.names = FALSE)
