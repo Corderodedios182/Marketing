@@ -22,7 +22,7 @@ import re
 #En caso de querer agregar nuevas validaciones a alguna plataforma corremos por línea
 #Y nos traemos los archivos que queremos trabajar
 import glob
-Mes = 'Enero'
+Mes = 'Febrero'
 
 #Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
 #Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
@@ -71,11 +71,18 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
         Base.fin_reporte = pd.to_datetime(Base.fin_reporte,format = "%Y-%m-%d")
 
         return Base
+    
+    def mes(x):
+        if len(str(x)) == 2:
+            y = str(x)
+        else:
+            y = '0' + str(x)
+        return y
 
     Facebook = Formato_Fechas(Facebook, 'Mes')
 
     Facebook.dtypes
-    Facebook['Mes'] = Facebook.inicio_reporte.apply(lambda x : x.month)
+    Facebook['Mes'] = Facebook.inicio_reporte.apply(lambda x : mes(x.month))
 
        #Extracción del nombre para cruzarlo con ventas
     C_Facebook = Facebook.loc[:,'Nombre de la campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
@@ -170,12 +177,13 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
     Adwords['plataforma'] = 'Adwords'
     
-    Adwords['mes'] = Adwords.inicio_reporte.apply(lambda x : x.month)
-    
+    Adwords['mes'] = Adwords.inicio_reporte.apply(lambda x : mes(x.month))
+
     #Extracción del nombre para cruzar con ventas
     
     C_Adwords = Adwords.loc[:,'campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
     C_Adwords.columns = cols
+    C_Adwords.loc[:,'Año-Mes'] = Adwords.inicio_reporte.apply(lambda x : str(x.year)[:2] + Adwords['mes'])
     C_Adwords = C_Adwords[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
     
     Adwords['llave_plataformas'] = C_Adwords ; del C_Adwords
@@ -228,7 +236,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     Adform.inicio_reporte = pd.to_datetime(Adform.inicio_reporte, format = '%d-%m-%Y')
     Adform.fin_reporte = pd.to_datetime(Adform.fin_reporte,format = '%d-%m-%Y')
     
-    Adform['mes'] = Adform.inicio_reporte.apply(lambda x : x.month)
+    Adform['mes'] = Adform.inicio_reporte.apply(lambda x : mes(x.month))
     
     #Extracción del nombre para cruzarlo con ventas
     C_Adform = Adform.loc[:,'campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]

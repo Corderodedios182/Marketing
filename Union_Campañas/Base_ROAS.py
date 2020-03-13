@@ -23,7 +23,10 @@ import os
 import glob
 
 #En este script se encuentra la función que nos arroja la unión del MP y FIC
+
 os.chdir('/home/carlos/Documentos/3_Adsocial/Marketing/Union_Campañas')
+os.listdir()
+
 from librerias import MP_FIC
 from librerias import Plataformas
 from librerias import Escritura_Sheets
@@ -32,100 +35,140 @@ from librerias import Escritura_Sheets
 os.chdir('/home/carlos/Dropbox/ROAS 2020')
 Archivos = os.listdir()
 
-        #-- MP_FIC (KPI) --#
+#-- MP_FIC (KPI) --#
+#La funcion MP_FIC_tabla que vive en el script MP_FIC nos ayuda a procesar el MP y FIC, descargado del google drive KPIS 2020
 Arch_MP_FIC = [x for x in Archivos if "KPI" in x]
-MP_FIC = MP_FIC.MP_FIC_tabla(Arch_MP_FIC)
+mp_fic = MP_FIC.MP_FIC_tabla(Arch_MP_FIC)
 
-        #-- Plataformas --#
-Mes = 'Enero'
+#-- Plataformas --#
+#Une los archivos de las plataformas que se dejan en las carpetas del dropbox, se pueden unir de forma semanal o mensual (la fecha de referencia será la fecha del reporte).
+def archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal'):
+    if tipo_union == 'Semanal':
+        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.csv')
+        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.xlsx')
+    else:
+        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.csv')
+        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.xlsx')
+    return Archivos_csv, Archivos_xlsx
 
-#Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
-#Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
+#Solo es necesario especificar el nombre del Mes de la carpeta y el tipo de union.
+archivos_csv_01, archivos_xlsx_01 = archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal')
+archivos_csv_02, archivos_xlsx_02 = archivos_plataformas(mes = 'Febrero', tipo_union = 'Semanal')
 
-Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Mensual/*.csv')
-Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Mensual/*.xlsx')
+#Base con la información de los reportes de todas las plataformas
+plataformas_01 = Plataformas.Plataformas_tabla(archivos_csv_01, archivos_xlsx_01)
+plataformas_02 = Plataformas.Plataformas_tabla(archivos_csv_02, archivos_xlsx_02)
 
-plataformas = Plataformas.Plataformas_tabla(Archivos_csv, Archivos_xlsx)
+plataformas_01.plataforma.value_counts()
+plataformas_02.plataforma.value_counts()
 
-plataformas.plataforma.value_counts()
+plataformas = pd.concat([plataformas_01,plataformas_02])
+
+del archivos_csv_01, archivos_csv_02, archivos_xlsx_01, archivos_xlsx_02, Arch_MP_FIC, Archivos
+
+#a = plataformas_01[plataformas_01.llave_plataformas.str.contains('pachuca')]
 
 ##############
-#Base Master #
+#Base Master
+#Aun se están haciendo pruebas para trabajar cada mes por separado, hacer una función que una todo dependiendo del mes#
 ##############
-MP_PLT = pd.merge(MP_FIC, plataformas, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
-MP_PLT = MP_PLT.sort_values(['cliente','marca','llave_ventas','fecha_inicio_plan','plataforma_y'])
+#plt
+mp_plt_01 = pd.merge(mp_fic, plataformas_01, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
 
-#Semanal
-#Escritura_Sheets.Escritura(MP_PLT, 6, header = True, Escribir = 'si') 
+bien_01 = mp_plt_01[(mp_plt_01.mes_plan == 'Enero') & ~(mp_plt_01.plataforma_y.isnull())]
+mal_01 = mp_plt_01[(mp_plt_01.mes_plan == 'Enero') & (mp_plt_01.plataforma_y.isnull())]
 
-#Mensual
-Escritura_Sheets.Escritura(MP_PLT, 8, header = True, Escribir = 'si')
+mp_plt_01['mes_cruze'] = 'Enero'
+#Los que no cruzaron de enero
+mp_plt_01.mes_plan.value_counts()
 
-#Información que no cruzo
-NO_CRUZO = MP_PLT[MP_PLT.plataforma_y.isnull()]
-NO_CRUZO = NO_CRUZO.sort_values(['llave_ventas'])
+b = mp_plt_01[mp_plt_01.llave_ventas.str.contains('pachuca')]
+#'2001_GICSA_ExplanadaPachuca_PI_MKT_SEM_TRF' #Revisar si es correcto que este en 2 reportes
 
-Escritura_Sheets.Escritura(NO_CRUZO, 9, header = True, Escribir = 'si')
+mp_plt_02 = pd.merge(mp_fic, plataformas_02, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
+mp_plt_02['mes_cruze'] = 'Febrero'
 
+mp_plt_02.mes_plan.value_counts()
 
-#
-import os
-import numpy as np
-import matplotlib.pyplot as plt
+bien_02 = mp_plt_02[(mp_plt_02.mes_plan == 'Febrero') & ~(mp_plt_02.plataforma_y.isnull())]
+mal_02 = mp_plt_02[(mp_plt_02.mes_plan == 'Febrero') & (mp_plt_02.plataforma_y.isnull())]
 
-plataformas.keys()
-cuentas = plataformas.groupby(['plataforma'], as_index = False).count().loc[:,('plataforma','cuenta')]
+c = mp_plt_02[mp_plt_02.llave_ventas.str.contains('pachuca')]
 
-x = cuentas.plataforma
-y = cuentas.cuenta
+union = pd.concat([bien_01, bien_02])
 
-fig, ax = plt.subplots()    
-width = 0.75 # the width of the bars 
-ind = np.arange(len(y))  # the x locations for the groups
-ax.barh(ind, y, width, color="blue")
-ax.set_yticks(ind+width/2)
-ax.set_yticklabels(x, minor=False)
-plt.title('Conteo registros plataformas (tabla plataformas)')
-plt.xlabel('Se agrupa por la nomenclatura')
-for i, v in enumerate(y):
-    ax.text(v , i, str(v))
+union.mes_cruze.value_counts()
 
-#Validemos cifras MP original y cruze
-MP = [] #Me lo traigo de correr por pedazos el MP_FIC
-MP.keys()
-MP.loc[:,'Inversión Total'].sum() - MP_FIC.loc[:,'inversión_total'].sum() 
+union = union.fillna('')
+union['llave_unica'] = union.llave_ventas + "-" + union.versión + "-" +  union.mes_plan
 
+FB = union[union.plataforma_abreviacion.str.contains('FB')]
+ADFORM = union[union.plataforma_abreviacion.str.contains('DSP')]
+ADWORDS = union[union.plataforma_abreviacion.str.contains('SEM')]
 
-MP_FIC.keys()
-MP_FIC[MP_FIC.versión.str.contains('VC')].groupby(['plataforma','versión'], as_index = False).count().loc[:,('plataforma','versión','cliente')]
-MP_FIC[~MP_FIC.versión.str.contains('VC')].groupby(['plataforma','versión'], as_index = False).count().loc[:,('plataforma','versión','cliente')]
-a = MP_FIC[~MP_FIC.versión.str.contains('VC') & MP_FIC.plataforma_abreviacion.str.contains('FB')].groupby(['llave_ventas','mes_plan'], as_index = False).count().loc[:,('llave_ventas','mes_plan','versión')]
-a[a.versión > 1]
+a = ADWORDS[ADWORDS.llave_ventas.str.contains('pachuca')]
 
-#Se duplican por error de la nomenclatura pero las cifras estan bien
-b = MP_FIC[MP_FIC.llave_ventas == '2001_od_payclip_ppf_pfm_FB']
-b = MP_FIC[MP_FIC.llave_ventas == '2002_petco_fulltrust_ppf_pfm_promo_FB']
+union[union.cliente.str.contains('Depot')]
+union.cliente.value_counts()
 
-x = cuentas.plataforma
-y = cuentas.cuenta
+##########################################################
+#Cruzes para detectar errores de nomenclatura en mp ó plt#
+##########################################################
 
-fig, ax = plt.subplots()    
-width = 0.75 # the width of the bars 
-ind = np.arange(len(y))  # the x locations for the groups
-ax.barh(ind, y, width, color="blue")
-ax.set_yticks(ind+width/2)
-ax.set_yticklabels(x, minor=False)
-plt.title('Conteo registros plataformas (tabla plataformas)')
-plt.xlabel('Se agrupa por la nomenclatura')
-for i, v in enumerate(y):
-    ax.text(v , i, str(v))
+#plt con mp
+plt_mp = pd.merge(plataformas, mp_fic, how = 'left', left_on = 'llave_plataformas', right_on = 'llave_ventas')
+plt_mp_no = plt_mp[pd.isnull(plt_mp.llave_ventas)]
+#¿Cuantos cruzaron?
+plt_mp = plt_mp[~pd.isnull(plt_mp.llave_ventas)]
+#mp con plt
+mp_plt = pd.merge(mp_fic, plataformas, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
+mp_plt_no = mp_plt[pd.isnull(mp_plt.llave_plataformas)]
+#¿Cuantos cruzaron? 
+mp_plt = mp_plt[~pd.isnull(mp_plt.llave_plataformas)]
 
+###########################
+#Validacion de lo faltante#
+###########################
+#plt_mp
+plt_mp_no_1 = plt_mp_no.llave_plataformas.str.split("_", 10,expand = True)
+plt_mp_no_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2","dummy"]
+plt_mp_no_1['dummy'] = ''
+plt_mp_no_1['archivo'] = 'plt_mp'
+plt_mp_no_1['Nombre_Campaña'] = plt_mp_no.llave_plataformas
 
+mp_plt_no_1 = mp_plt_no.llave_ventas.str.split("_", 10,expand = True)
+mp_plt_no_1.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2","dummy","dummy"]
+mp_plt_no_1 = mp_plt_no_1.iloc[:,[0,1,2,3,4,5]]
+mp_plt_no_1['archivo'] = 'mp_plt'
+mp_plt_no_1['Nombre_Campaña'] = mp_plt_no.llave_ventas
 
+Union = []
+Union.append(plt_mp_no_1)
+Union.append(mp_plt_no_1)
+Union = pd.concat(Union)
 
+#Desglose por cliente
+OD = Union.loc[ Union.Cliente.str.contains('od', na = False) & ~Union.Cliente.str.contains('sodexo', na = False)]
+RS = Union.loc[ Union.Cliente.str.contains('rs', na = False)]
+THS = Union.loc[ Union.Cliente.str.contains('ths', na = False)]
+PETCO = Union.loc[ Union.Cliente.str.contains('petco', na = False)]
+GICSA = Union.loc[ Union.Cliente.str.contains('gicsa', na = False)]
+GWEP = Union.loc[ Union.Cliente.str.contains('gwep', na = False)]
 
+OD.shape[0] + RS.shape[0] + THS.shape[0] + PETCO.shape[0] + GICSA.shape[0] + GWEP.shape[0]
 
+OTROS = Union.loc[ ~Union.Cliente.str.contains('od', na = False) & ~Union.Cliente.str.contains('rs', na = False) & ~Union.Cliente.str.contains('sodexo', na = False) & ~Union.Cliente.str.contains('ths', na = False) &
+                  ~Union.Cliente.str.contains('petco', na = False) & ~Union.Cliente.str.contains('gicsa', na = False) & ~Union.Cliente.str.contains('gicsa', na = False) & ~Union.Cliente.str.contains('gwep', na = False)]
 
+#########################################
+#Escritura de los datos en Google Sheets#
+#########################################
+Escritura_Sheets.Escritura(OD, 12, header = True, Escribir = 'si')
+Escritura_Sheets.Escritura(RS, 13, header = True, Escribir = 'si')
+Escritura_Sheets.Escritura(THS, 14, header = True, Escribir = 'si')
+Escritura_Sheets.Escritura(PETCO, 15, header = True, Escribir = 'si')
+Escritura_Sheets.Escritura(GICSA, 16, header = True, Escribir = 'si')
+Escritura_Sheets.Escritura(GWEP, 17, header = True, Escribir = 'si')
+Escritura_Sheets.Escritura(OTROS, 18, header = True, Escribir = 'si')
 
-
-
+a = union[union.llave_plataformas.str.contains('2002_odcam')]

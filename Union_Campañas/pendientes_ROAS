@@ -1,26 +1,28 @@
- -Ver como cruza la información de Adform
- -Ver como cruza la información de Adwords
-	*La fecha sale del reporte y coloco las reglas de duración
-
- -Correr para Enero y Febrero, para unir todo.
-	*Ejercicios semanales y mensuales
-	*validar lo que esta arriba no se encuentra duplicado
-
  -Validación de cifras (Trabajando)
 	*¿Como esta sumando las cifras, no tengo duplicados?
+	si tengo duplicados 2001_GICSA_ExplanadaPachuca_PI_MKT_SEM_TRF se encuentra en 2 repotes de enero Adwords 1-01-2020 al 8-01-2020-2, Adwords 1-01-2020 al 8-01-2020-1
 	*Formula dinero gastado Adform
 	*Agregar conversiones y sales de adform: CPM*Impresiones/1000
-
- -Validación de cruzes
-	*Saber que cruza correctamente
-	*Saber que no cruza
 
  -Casos especiales
 	*rmnt a pmi
 	*Agregar la separación de la llave
 	*Analizar si vale la pena crear clases
+	*Mes cruze = Mes del MP => Son los nulos que no cruzaron con nada
 
- 
+ - Tablas klipfolio
 
+#Analytics unir base e intentar cruzar (preguntar si así sirve o ver si algo cruza)
 
+#Crear las nuevas columnas de Adform, y calcular del dinero gastado y validar cifras totales (revisar cifras dianis)
+#Llenar bruno conversiones, dudas monitoreo
+
+#Validar ROAS Bruno vs ROAS Master python (Sheets de ROAS)
+
+#Historico GG, ver que hecho (Terminar gráficas con todas las métricas y preguntar a Clau el sentido de la inversión)
+
+#Validar Semanal y Mensual
+#Producto
+#Descarga ROAS Febrero ultima semana y Mensual
+#Descarga primera semana de marzo GWEP, ROAS (Martes siguiente semana salvo lo que diga la jefa)
 
