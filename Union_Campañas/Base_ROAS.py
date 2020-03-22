@@ -90,7 +90,7 @@ mp_plt_02['mes_cruze'] = 'Febrero'
 
 mp_plt_02.mes_plan.value_counts()
 
-bien_02 = mp_plt_02[(mp_plt_02.mes_plan == 'Febrero') & ~(mp_plt_02.plataforma_y.isnull())]
+bien_02 = mp_plt_02[~mp_plt_02.plataforma_y.isnull()]
 mal_02 = mp_plt_02[(mp_plt_02.mes_plan == 'Febrero') & (mp_plt_02.plataforma_y.isnull())]
 
 c = mp_plt_02[mp_plt_02.llave_ventas.str.contains('pachuca')]
@@ -163,12 +163,20 @@ OTROS = Union.loc[ ~Union.Cliente.str.contains('od', na = False) & ~Union.Client
 #########################################
 #Escritura de los datos en Google Sheets#
 #########################################
-Escritura_Sheets.Escritura(OD, 12, header = True, Escribir = 'si')
-Escritura_Sheets.Escritura(RS, 13, header = True, Escribir = 'si')
-Escritura_Sheets.Escritura(THS, 14, header = True, Escribir = 'si')
-Escritura_Sheets.Escritura(PETCO, 15, header = True, Escribir = 'si')
-Escritura_Sheets.Escritura(GICSA, 16, header = True, Escribir = 'si')
-Escritura_Sheets.Escritura(GWEP, 17, header = True, Escribir = 'si')
-Escritura_Sheets.Escritura(OTROS, 18, header = True, Escribir = 'si')
+Escritura_Sheets.Escritura(OD, 12, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(RS, 13, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(THS, 14, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(PETCO, 15, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(GICSA, 16, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(GWEP, 17, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(OTROS, 18, header = True, Escribir = 'no')
 
+#Validaciones del momento (borrar)
 a = union[union.llave_plataformas.str.contains('2002_odcam')]
+
+tmp = union[union.mes_cruze == 'Febrero']
+
+
+
+
+
