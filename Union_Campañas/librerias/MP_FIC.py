@@ -6,9 +6,11 @@ Created on Wed Mar  4 13:14:05 2020
 @author: carlos
 
 Descripción: Este script contiene la función MP_FIC_tabla la cual limpia el archivo de KPIS de Pepe
-y une el MP y FIC.
+y une el MP (planes clientes) y FIC (planes internos).
 
-Aun se deben hacer cambios para que escriba las validaciones
+Aun se deben hacer cambios para que escriba las validaciones:
+    Duplicados
+    Faltantes FIC
 
 """
 #Paqueterías
@@ -16,13 +18,15 @@ import os
 import pandas as pd
 from librerias import Escritura_Sheets
 
+pd.set_option('display.float_format', lambda x: '%.5f' % x)
+
 #En caso de querer agregar nuevas validaciones a alguna plataforma corremos por línea
 #Y nos traemos los archivos que queremos trabajar
 # Aquí descargo el nuevo archivo de KPIS
 os.chdir('/home/carlos/Dropbox/ROAS 2020')
 Archivos = os.listdir()
 
-        #-- MP_FIC (KPI) --#
+#-- MP_FIC (KPI) --#
 Arch_MP_FIC = [x for x in Archivos if "KPI" in x]
 
 #################################################################
@@ -32,6 +36,18 @@ Arch_MP_FIC = [x for x in Archivos if "KPI" in x]
 #################################################################
 
 def MP_FIC_tabla(Arch_MP_FIC):
+    
+    """limpia el archivo de KPIS de Pepe y une el MP (planes clientes) y FIC (planes internos),
+        - le da formato de fechas, formato de numeros, formato en la llave (añomes_cliente_campaña_presupuesto_tipo_plataforma)
+        - cruza el mp y fic
+        - realiza agrupaciones del mp y fic, ya que la llave no es unica por que tenemos distintos formatos por campaña.
+    
+    :Arch_MP_FIC: nombre del archivo kpis 2020
+    :return: La base mp_fic
+    
+    >>> MP_FIC_tabla(Arch_MP_FIC)
+        MP_FIC
+    """
     
     #MP Son unicos
     MP = pd.read_excel(Arch_MP_FIC[0], sheet_name = 'KPIS MP 2020', skiprows = 2)
@@ -86,12 +102,14 @@ def MP_FIC_tabla(Arch_MP_FIC):
     
     MP.loc[MP['Plataforma'].str.contains('Instagram') , 'Plt'] = 'IG'
     MP.loc[MP['Plataforma'].str.contains('Facebook') , 'Plt'] = 'FB'
+    MP.loc[MP['Plataforma'].str.contains('Facebook / Instagram') , 'Plt'] = 'FB'
     MP.loc[MP['Plataforma'].str.contains('Google') , 'Plt'] = 'SEM'
     MP.loc[(MP['Plataforma'].str.contains('Programmatic')) | (MP['Plataforma'].str.contains('Display'))  , 'Plt'] = 'DSP'
     MP.loc[(MP['Plataforma'].str.contains('Waze')) | (MP['Plataforma'].str.contains('AdsMovil')) , 'Plt'] = 'PV'
     
     FIC.loc[FIC['Plataforma'].str.contains('Instagram') , 'Plt'] = 'IG'
     FIC.loc[FIC['Plataforma'].str.contains('Facebook') , 'Plt'] = 'FB'
+    FIC.loc[FIC['Plataforma'].str.contains('Facebook / Instagram') , 'Plt'] = 'FB'
     FIC.loc[FIC['Plataforma'].str.contains('Google') , 'Plt'] = 'SEM'
     FIC.loc[(FIC['Plataforma'].str.contains('Programmatic')) | (FIC['Plataforma'].str.contains('Display'))  , 'Plt'] = 'DSP'
     FIC.loc[(FIC['Plataforma'].str.contains('Waze')) | (FIC['Plataforma'].str.contains('AdsMovil')) , 'Plt'] = 'PV'
@@ -105,7 +123,7 @@ def MP_FIC_tabla(Arch_MP_FIC):
     MP = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
     MP_Duplicados = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
     FIC = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
-    FIC_Duplicados = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
+    FIC_Duplicados = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
     #Campañas unicas
     MP = MP.groupby(['CLIENTE','MARCA','llave_ventas','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).agg(
                                                                                {'Costo Planeado':'mean',
@@ -121,7 +139,8 @@ def MP_FIC_tabla(Arch_MP_FIC):
     MP_Duplicados = MP_Duplicados.sort_values(['llave_ventas'])
 
     #Campañas unicas
-    FIC = FIC.groupby(['CLIENTE','MARCA','llave_ventas','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).agg({'Inversión AdOps':'sum',
+    FIC_1 = FIC.groupby(['CLIENTE','MARCA','llave_ventas','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).sum()
+    .agg({'Inversión AdOps':'sum',
                                                                                'Operativo AdOps':'sum',
                                                                                'Serving AdOps':'sum',
                                                                                'Costo Operativo':'mean',

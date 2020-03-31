@@ -22,6 +22,7 @@ import pandas as pd
 import os
 import glob
 
+
 #En este script se encuentra la función que nos arroja la unión del MP y FIC
 
 os.chdir('/home/carlos/Documentos/3_Adsocial/Marketing/Union_Campañas')
@@ -37,12 +38,32 @@ Archivos = os.listdir()
 
 #-- MP_FIC (KPI) --#
 #La funcion MP_FIC_tabla que vive en el script MP_FIC nos ayuda a procesar el MP y FIC, descargado del google drive KPIS 2020
+
 Arch_MP_FIC = [x for x in Archivos if "KPI" in x]
 mp_fic = MP_FIC.MP_FIC_tabla(Arch_MP_FIC)
 
+mp_fic.keys()
+a = mp_fic[mp_fic.llave_ventas == '2003_gicsa_explanadapachuca_pi_mkt_PV']
+a = mp_fic[(mp_fic.cliente == 'Petco') & (mp_fic.marca == 'Petco') & (mp_fic.mes_plan == 'Marzo') & (mp_fic.versión == 'V1') & (mp_fic.plataforma == 'Facebook')]
+
+tmp = mp_fic.groupby(['cliente', 'marca', 'llave_ventas', 'plataforma_abreviacion',
+                      'plataforma', 'versión', 'fecha_inicio_plan', 'fecha_fin_plan','plan_x','plan_y','mes_plan'], as_index = False).agg({
+                                        'costo_planeado':'mean',
+                                        'kpi_planeado':'mean',
+                                        'serving':'mean',
+                                        'inversión_plataforma':'mean',
+                                        'inversión_total':'mean',
+                                        'inversión_AdOps':'mean',
+                                        'Operativo_AdOps':'mean',
+                                        'Serving_AdOps':'mean',
+                                        'costo_operativo':'mean',
+                                        'conteo_MP_FIC':'sum'})
+
+
+
 #-- Plataformas --#
 #Une los archivos de las plataformas que se dejan en las carpetas del dropbox, se pueden unir de forma semanal o mensual (la fecha de referencia será la fecha del reporte).
-def archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal'):
+def Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal'):
     if tipo_union == 'Semanal':
         Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.csv')
         Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.xlsx')
@@ -52,17 +73,20 @@ def archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal'):
     return Archivos_csv, Archivos_xlsx
 
 #Solo es necesario especificar el nombre del Mes de la carpeta y el tipo de union.
-archivos_csv_01, archivos_xlsx_01 = archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal')
-archivos_csv_02, archivos_xlsx_02 = archivos_plataformas(mes = 'Febrero', tipo_union = 'Semanal')
+archivos_csv_01, archivos_xlsx_01 = Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal')
+archivos_csv_02, archivos_xlsx_02 = Archivos_Plataformas(mes = '2002_Febrero', tipo_union = 'Semanal')
+archivos_csv_03, archivos_xlsx_03 = Archivos_Plataformas(mes = '2003_Marzo', tipo_union = 'Semanal')
 
 #Base con la información de los reportes de todas las plataformas
 plataformas_01 = Plataformas.Plataformas_tabla(archivos_csv_01, archivos_xlsx_01)
 plataformas_02 = Plataformas.Plataformas_tabla(archivos_csv_02, archivos_xlsx_02)
+plataformas_03 = Plataformas.Plataformas_tabla(archivos_csv_03, archivos_xlsx_03)
 
 plataformas_01.plataforma.value_counts()
 plataformas_02.plataforma.value_counts()
+plataformas_03.plataforma.value_counts()
 
-plataformas = pd.concat([plataformas_01,plataformas_02])
+plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03])
 
 del archivos_csv_01, archivos_csv_02, archivos_xlsx_01, archivos_xlsx_02, Arch_MP_FIC, Archivos
 
@@ -73,18 +97,21 @@ del archivos_csv_01, archivos_csv_02, archivos_xlsx_01, archivos_xlsx_02, Arch_M
 #Aun se están haciendo pruebas para trabajar cada mes por separado, hacer una función que una todo dependiendo del mes#
 ##############
 #plt
+#Enero
 mp_plt_01 = pd.merge(mp_fic, plataformas_01, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
+
+mp_plt_01['mes_cruze'] = 'Enero'
 
 bien_01 = mp_plt_01[(mp_plt_01.mes_plan == 'Enero') & ~(mp_plt_01.plataforma_y.isnull())]
 mal_01 = mp_plt_01[(mp_plt_01.mes_plan == 'Enero') & (mp_plt_01.plataforma_y.isnull())]
 
-mp_plt_01['mes_cruze'] = 'Enero'
 #Los que no cruzaron de enero
 mp_plt_01.mes_plan.value_counts()
 
 b = mp_plt_01[mp_plt_01.llave_ventas.str.contains('pachuca')]
 #'2001_GICSA_ExplanadaPachuca_PI_MKT_SEM_TRF' #Revisar si es correcto que este en 2 reportes
 
+#Febrero
 mp_plt_02 = pd.merge(mp_fic, plataformas_02, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
 mp_plt_02['mes_cruze'] = 'Febrero'
 
@@ -95,7 +122,18 @@ mal_02 = mp_plt_02[(mp_plt_02.mes_plan == 'Febrero') & (mp_plt_02.plataforma_y.i
 
 c = mp_plt_02[mp_plt_02.llave_ventas.str.contains('pachuca')]
 
-union = pd.concat([bien_01, bien_02])
+#Marzo
+mp_plt_03 = pd.merge(mp_fic, plataformas_03, how = 'left', left_on = 'llave_ventas', right_on = 'llave_plataformas')
+mp_plt_03['mes_cruze'] = 'Marzo'
+
+mp_plt_03.mes_plan.value_counts()
+
+bien_03 = mp_plt_03[~mp_plt_03.plataforma_y.isnull()]
+mal_03 = mp_plt_03[(mp_plt_03.mes_plan == 'Marzo') & (mp_plt_03.plataforma_y.isnull())]
+
+d = mp_plt_03[mp_plt_03.llave_ventas.str.contains('pachuca')]
+
+union = pd.concat([bien_01, bien_02,bien_03])
 
 union.mes_cruze.value_counts()
 
@@ -110,6 +148,8 @@ a = ADWORDS[ADWORDS.llave_ventas.str.contains('pachuca')]
 
 union[union.cliente.str.contains('Depot')]
 union.cliente.value_counts()
+
+Escritura_Sheets.Escritura(union, 2, Escribir = 'si')
 
 ##########################################################
 #Cruzes para detectar errores de nomenclatura en mp ó plt#
@@ -166,7 +206,13 @@ OTROS = Union.loc[ ~Union.Cliente.str.contains('od', na = False) & ~Union.Client
 Escritura_Sheets.Escritura(OD, 12, header = True, Escribir = 'no')
 Escritura_Sheets.Escritura(RS, 13, header = True, Escribir = 'no')
 Escritura_Sheets.Escritura(THS, 14, header = True, Escribir = 'no')
-Escritura_Sheets.Escritura(PETCO, 15, header = True, Escribir = 'no')
+Escritura_Sheets.Escritura(PETCO, 15, header = True, Escribir = 'no')tmp = bien_01.groupby(['cliente','marca','mes_plan','versión','plataforma_x'], as_index = False).agg({
+                                                                                                'costo_planeado':'mean',
+                                                                                                'kpi_planeado':'mean',
+                                                                                                'serving':'mean',
+                                                                                                'inversión_plataforma':'mean',
+                                                                                                'inversión_total':'mean'})
+
 Escritura_Sheets.Escritura(GICSA, 16, header = True, Escribir = 'no')
 Escritura_Sheets.Escritura(GWEP, 17, header = True, Escribir = 'no')
 Escritura_Sheets.Escritura(OTROS, 18, header = True, Escribir = 'no')
@@ -177,6 +223,19 @@ a = union[union.llave_plataformas.str.contains('2002_odcam')]
 tmp = union[union.mes_cruze == 'Febrero']
 
 
+#Validando mp y fic cifras
+bien_01.keys()
+
+tmp_t = bien_01[(bien_01.cliente == 'GICSA') & (bien_01.marca == 'Forum Cuernavaca')]
 
 
+tmp_c = tmp[tmp.cliente == 'The Home Store']
 
+tmp_t = tmp.groupby('cliente').sum()
+
+tmp.sum()
+
+tmp.plataforma_x.value_counts()
+
+#
+Escritura_Sheets.archivos_finales()

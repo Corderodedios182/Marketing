@@ -23,7 +23,7 @@ import numpy as np
 #En caso de querer agregar nuevas validaciones a alguna plataforma corremos por línea
 #Y nos traemos los archivos que queremos trabajar
 import glob
-Mes = 'Febrero'
+Mes = '2002_Febrero'
 
 Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
 Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
@@ -33,13 +33,14 @@ Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**
 
 def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
-    Arch_FB = [x for x in Archivos_csv if "FB" in x]
+    Arch_FB = [x for x in Archivos_xlsx if "FB" in x]
     
     Facebook = []
     
     for csv in Arch_FB:
         
-        tmp = pd.read_csv(csv, parse_dates = ['Inicio'])
+        tmp = pd.read_excel(csv, parse_dates = ['Inicio'])
+        tmp = tmp.iloc[1:,]
         tmp['Archivo'] = csv
         Facebook.append(tmp)
     
@@ -194,7 +195,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
 
     for csv in Arch_Adwords:
         try:
-            tmp = pd.read_csv(csv, sep = ',', skiprows = 2, encoding='utf-8')
+            tmp = pd.read_csv(csv, delimiter = ',', skiprows = 3, encoding = "latin-1", names = ['Campaña', 'Mes', 'Fecha de inicio', 'Fecha de finalizacion', 'divisa','Costo', 'Impresiones', 'Clics'], header = None)
             tmp['Archivo'] = csv
             #Extreamos las fechas del nombre del reporte
             Fechas = list(tmp.Archivo.unique())
@@ -222,13 +223,11 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     del Fechas, csv, fallas, fechas, tmp
         #Formato correcto para trabajar con las fechas
     
-    Adwords = Adwords.rename(columns = {'Campa�a':'Campaña', 'Fecha de finalizaci�n':'Fecha de finalización','Moneda':'divisa'})
-    
     #ok
     Adwords['Fecha de inicio'] =  pd.to_datetime(Adwords.loc[:,'Fecha de inicio'],errors='ignore',
                                                  format='%Y-%m-%d')
     #ok
-    Adwords['Fecha de finalización'] =  pd.to_datetime(Adwords['Fecha de finalización'], errors = 'coerce',
+    Adwords['Fecha de finalizacion'] =  pd.to_datetime(Adwords['Fecha de finalizacion'], errors = 'coerce',
                                                        format='%Y-%m-%d')
     #ok
     Adwords['inicio_reporte'] =  pd.to_datetime(Adwords['inicio_reporte'],
@@ -240,7 +239,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
     Adwords.keys()
     
-    Adwords = Adwords.loc[:,('Archivo','Cuenta','Campaña','Mes','Fecha de inicio','Fecha de finalización','inicio_reporte','fin_reporte',
+    Adwords = Adwords.loc[:,('Archivo','Cuenta','Campaña','Mes','Fecha de inicio','Fecha de finalizacion','inicio_reporte','fin_reporte',
                              'divisa','Costo','Impresiones','Clics')]
     
     Adwords.columns = ('archivo','cuenta','campaña','mes','inicio_campaña','fin_campaña','inicio_reporte','fin_reporte',
