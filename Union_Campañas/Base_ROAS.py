@@ -22,7 +22,6 @@ import pandas as pd
 import os
 import glob
 
-
 #En este script se encuentra la función que nos arroja la unión del MP y FIC
 
 os.chdir('/home/carlos/Documentos/3_Adsocial/Marketing/Union_Campañas')
@@ -31,36 +30,85 @@ os.listdir()
 from librerias import MP_FIC
 from librerias import Plataformas
 from librerias import Escritura_Sheets
-
+pd.set_option('display.float_format', lambda x: '%.10f' % x)
 #Aquí descargo el nuevo archivo de KPIS
 os.chdir('/home/carlos/Dropbox/ROAS 2020')
 Archivos = os.listdir()
 
 #-- MP_FIC (KPI) --#
 #La funcion MP_FIC_tabla que vive en el script MP_FIC nos ayuda a procesar el MP y FIC, descargado del google drive KPIS 2020
-
 Arch_MP_FIC = [x for x in Archivos if "KPI" in x]
-mp_fic = MP_FIC.MP_FIC_tabla(Arch_MP_FIC)
+#La función regresa una tupla con mp_fic, mp, fic
+tablas_mp_fic =  MP_FIC.MP_FIC_tabla(Arch_MP_FIC)
 
+mp_fic = tablas_mp_fic[0] 
+mp = tablas_mp_fic[1] 
+fic = tablas_mp_fic[2] 
+
+#Cuadrando el mp
 mp_fic.keys()
-a = mp_fic[mp_fic.llave_ventas == '2003_gicsa_explanadapachuca_pi_mkt_PV']
+mp_fic['conteo'] = 1
+#Veamos que podemos tener algunos duplicados por los temas de la llave que no es unica
+#Duplicado incorrecto
+a = mp_fic[mp_fic.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
+b = mp[mp.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
+c = fic[fic.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
+#Duplicado correcto
+a = mp_fic[mp_fic.llave_ventas.str.contains('2003_od_brother-impresion_ppf_pfm_SEM')]
+b = mp[mp.llave_ventas.str.contains('2003_od_brother-impresion_ppf_pfm_SEM')]
+c = fic[fic.llave_ventas.str.contains('2003_od_brother-impresion_ppf_pfm_SEM')]
+
+#nuevos duplicados
+a = mp_fic[mp_fic.llave_ventas.str.contains('2002_gicsa_explanadapachuca_pi_mkt_FB')]
+b = mp[mp.llave_ventas.str.contains('2002_gicsa_explanadapachuca_pi_mkt_FB')]
+c = fic[fic.llave_ventas.str.contains('2002_gicsa_explanadapachuca_pi_mkt_FB')] #esta mal escrito la marca
+
+a = mp_fic[mp_fic.llave_ventas.str.contains('2003_gwep_aurum_pi_pfm_SEM')]
+b = mp[mp.llave_ventas.str.contains('2003_gwep_aurum_pi_pfm_SEM')]
+c = fic[fic.llave_ventas.str.contains('2003_gwep_aurum_pi_pfm_SEM')] #la plataforma no es la misma
+
+
+#De esta manera el mp ya no cuenta con registros duplicados
+cuadrar = mp_fic.groupby(['cliente','marca','llave_ventas','llave_unica_mp','plataforma','plataforma_abreviacion','versión',
+                      'fecha_inicio_plan','fecha_fin_plan','mes_plan','plan_x'], as_index = False).agg({
+                                                                                                        'costo_planeado':'mean',
+                                                                                                        'kpi_planeado':'mean',
+                                                                                                        'serving':'mean',
+                                                                                                        'inversión_plataforma':'mean',
+                                                                                                        'inversión_total':'mean',
+                                                                                                        'inversión_AdOps':'mean',
+                                                                                                        'Operativo_AdOps':'mean',
+                                                                                                        'Serving_AdOps':'mean',
+                                                                                                        'costo_operativo':'mean',
+                                                                                                        'conteo_MP_FIC':'sum',
+                                                                                                        'conteo':'sum'})
+                          
+#El valor se vuelve unico pero el fic se promedia
+b = cuadrar[cuadrar.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
+
+duplicados = cuadrar[cuadrar.conteo > 1]
+
+cuadrar = cuadrar.groupby(['plataforma','plataforma_abreviacion'], as_index = False).sum()
+cuadrar.sum()
+
 a = mp_fic[(mp_fic.cliente == 'Petco') & (mp_fic.marca == 'Petco') & (mp_fic.mes_plan == 'Marzo') & (mp_fic.versión == 'V1') & (mp_fic.plataforma == 'Facebook')]
 
-tmp = mp_fic.groupby(['cliente', 'marca', 'llave_ventas', 'plataforma_abreviacion',
-                      'plataforma', 'versión', 'fecha_inicio_plan', 'fecha_fin_plan','plan_x','plan_y','mes_plan'], as_index = False).agg({
-                                        'costo_planeado':'mean',
-                                        'kpi_planeado':'mean',
-                                        'serving':'mean',
-                                        'inversión_plataforma':'mean',
-                                        'inversión_total':'mean',
-                                        'inversión_AdOps':'mean',
-                                        'Operativo_AdOps':'mean',
-                                        'Serving_AdOps':'mean',
-                                        'costo_operativo':'mean',
-                                        'conteo_MP_FIC':'sum'})
+#se le hace esta agrupacion para que no tentamos duplicados erroneos
+mp_fic = mp_fic.groupby(['cliente','marca','llave_ventas','llave_unica_mp','plataforma','plataforma_abreviacion','versión',
+                      'fecha_inicio_plan','fecha_fin_plan','mes_plan','plan_x'], as_index = False).agg({
+                                                                                                        'costo_planeado':'mean',
+                                                                                                        'kpi_planeado':'mean',
+                                                                                                        'serving':'mean',
+                                                                                                        'inversión_plataforma':'mean',
+                                                                                                        'inversión_total':'mean',
+                                                                                                        'inversión_AdOps':'mean',
+                                                                                                        'Operativo_AdOps':'mean',
+                                                                                                        'Serving_AdOps':'mean',
+                                                                                                        'costo_operativo':'mean',
+                                                                                                        'conteo_MP_FIC':'sum',
+                                                                                                        'conteo':'sum'})
 
-
-
+                          
 #-- Plataformas --#
 #Une los archivos de las plataformas que se dejan en las carpetas del dropbox, se pueden unir de forma semanal o mensual (la fecha de referencia será la fecha del reporte).
 def Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal'):
@@ -138,7 +186,6 @@ union = pd.concat([bien_01, bien_02,bien_03])
 union.mes_cruze.value_counts()
 
 union = union.fillna('')
-union['llave_unica'] = union.llave_ventas + "-" + union.versión + "-" +  union.mes_plan
 
 FB = union[union.plataforma_abreviacion.str.contains('FB')]
 ADFORM = union[union.plataforma_abreviacion.str.contains('DSP')]
@@ -149,7 +196,7 @@ a = ADWORDS[ADWORDS.llave_ventas.str.contains('pachuca')]
 union[union.cliente.str.contains('Depot')]
 union.cliente.value_counts()
 
-Escritura_Sheets.Escritura(union, 2, Escribir = 'si')
+Escritura_Sheets.Escritura(union, 2, Escribir = 'si', header = True)
 
 ##########################################################
 #Cruzes para detectar errores de nomenclatura en mp ó plt#
