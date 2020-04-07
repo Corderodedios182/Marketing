@@ -183,7 +183,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
     bien_facebook['inicio'] = [fechas_inicio(x,y) for x, y in zip(bien_facebook.inicio_campaña,bien_facebook.inicio_reporte)] #Este es el bueno      
     bien_facebook['fin'] = [fechas_fin(x,y) for x, y in zip(bien_facebook.fin_reporte,bien_facebook.fin_campaña)] #Este es el bueno
-    bien_facebook['dias'] = bien_facebook.fin - bien_facebook.inicio
+    bien_facebook['dias_actividad_reporte'] = bien_facebook.fin - bien_facebook.inicio
     
     bien_facebook.archivo.value_counts()
     
@@ -293,7 +293,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
     bien_adwords['inicio'] = [ fechas_inicio(x,y) for x, y in zip(bien_adwords.inicio_campaña, bien_adwords.inicio_reporte) ]
     bien_adwords['fin'] = [fechas_fin(x,y) for x, y in zip(bien_adwords.fin_reporte,bien_adwords.fin_campaña)] #Este es el bueno
-    bien_adwords['dias'] = bien_adwords.fin - bien_adwords.inicio
+    bien_adwords['dias_actividad_reporte'] = bien_adwords.fin - bien_adwords.inicio
     
     #-- Adform --#
     Arch_Adform = [x for x in Archivos_xlsx if "Adform" in x]
@@ -384,11 +384,11 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
                                                                                                  
     Adform['inicio'] = [fechas_inicio(x,y) for x, y in zip(Adform.inicio_campaña, Adform.inicio_reporte)] #Este es el bueno      
     Adform['fin'] = [fechas_fin(x,y) for x, y in zip(Adform.fin_reporte, Adform.fin_campaña)] #Este es el bueno
-    Adform['dias'] = Adform.fin - Adform.inicio
+    Adform['dias_actividad_reporte'] = Adform.fin - Adform.inicio
 
     #Conversiones Asistidas y directas de Adform    
-    a = Adform[Adform.dias < pd.Timedelta(0,'D')]
-    b = Adform[Adform.dias >= pd.Timedelta(0,'D')]
+    a = Adform[Adform.dias_actividad_reporte < pd.Timedelta(0,'D')]
+    b = Adform[Adform.dias_actividad_reporte >= pd.Timedelta(0,'D')]
     
     a = a[a.conversiones > 0]
     a.conversiones_asistidas = a.conversiones

@@ -42,7 +42,7 @@ def MP_FIC_tabla(Arch_MP_FIC):
         - realiza agrupaciones del mp y fic, ya que la llave no es unica por que tenemos distintos formatos por campaña.
     
     :Arch_MP_FIC: nombre del archivo kpis 2020
-    :return: arroja una tupla con las bases (mp_fic, mp y fic)
+    :return: arroja una tupla con las bases (mp_fic, mp, fic, mp_duplicados, fic_duplicados)
     
     >>> MP_FIC_tabla(Arch_MP_FIC)
         mp_fic = (mp_fic, mp, fic)[0]
@@ -144,12 +144,25 @@ def MP_FIC_tabla(Arch_MP_FIC):
     
     FIC['llave_ventas'] = FIC.loc[:,'NOMENCLATURA'] + str("_") + FIC['Plt']
     FIC["llave_ventas"].str.strip()
-
-    MP = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
-    MP_Duplicados = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
     
-    FIC = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
-    FIC_Duplicados = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','MARCA','CAMPAÑA','Mes','Versión','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
+    #Separación de la nomenclatura
+    
+    C_MP = MP['llave_ventas'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","cliente_nomenclatura","campaña_nomenclatura","tipo_presupuesto","tipo_2"]
+    C_MP.columns = cols
+    
+    MP = pd.concat([C_MP,MP], axis = 1)
+    
+    MP = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','cliente_nomenclatura','MARCA','CAMPAÑA','campaña_nomenclatura','Año-Mes','Mes','Versión','tipo_presupuesto','tipo_2','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
+    MP_Duplicados = MP.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','cliente_nomenclatura','MARCA','CAMPAÑA','campaña_nomenclatura','Año-Mes','Mes','Versión','tipo_presupuesto','tipo_2','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Costo Planeado','KPI Planeado','Serving','Inversión Plataforma','Inversión Total')]
+
+
+    C_FIC = FIC['llave_ventas'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","cliente_nomenclatura","campaña_nomenclatura","tipo_presupuesto","tipo_2"]
+    C_FIC.columns = cols
+    
+    FIC = pd.concat([C_FIC,FIC], axis = 1)
+    
+    FIC = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','cliente_nomenclatura','MARCA','CAMPAÑA','campaña_nomenclatura','Año-Mes','Mes','Versión','tipo_presupuesto','tipo_2','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
+    FIC_Duplicados = FIC.loc[:, ('Archivo','NOMENCLATURA','llave_ventas','CLIENTE','cliente_nomenclatura','MARCA','CAMPAÑA','campaña_nomenclatura','Año-Mes','Mes','Versión','tipo_presupuesto','tipo_2','Plataforma','Plt','Formato','Inicio','Fin','TDC','Objetivo','Inversión AdOps','Operativo AdOps', 'Serving AdOps','Costo Operativo')]
     
     #Campañas unicas MP
     MP['llave_unica_mp'] = MP.llave_ventas + "_" +  MP.Versión
@@ -165,13 +178,14 @@ def MP_FIC_tabla(Arch_MP_FIC):
     
         a.Fin = a.Fin.max()
     
-        a = a.groupby(['CLIENTE','MARCA','llave_ventas','llave_unica_mp','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).agg(
-                                                                                                                               {'Costo Planeado':'mean',
-                                                                                                                                'KPI Planeado':'sum',
-                                                                                                                                'Serving':'sum',
-                                                                                                                                'Inversión Plataforma':'sum',
-                                                                                                                                'Inversión Total':'sum',
-                                                                                                                                'NOMENCLATURA':'count'})
+        a = a.groupby(['CLIENTE','cliente_nomenclatura','MARCA','campaña_nomenclatura','llave_ventas','llave_unica_mp','Plt','Plataforma','Versión',
+                       'Inicio','Fin','Año-Mes','Mes','tipo_presupuesto','tipo_2'], as_index = False).agg(
+                                                                                                       {'Costo Planeado':'mean',
+                                                                                                        'KPI Planeado':'sum',
+                                                                                                        'Serving':'sum',
+                                                                                                        'Inversión Plataforma':'sum',
+                                                                                                        'Inversión Total':'sum',
+                                                                                                        'NOMENCLATURA':'count'})
     
         bien_mp.append(a)
     
@@ -199,12 +213,13 @@ def MP_FIC_tabla(Arch_MP_FIC):
     
         a.Fin = a.Fin.max()
     
-        a = a.groupby(['CLIENTE','MARCA','llave_ventas','llave_unica_fic','Plt','Plataforma','Versión','Inicio','Fin','Mes'], as_index = False).agg(
-                                                                                                                               {'Inversión AdOps':'sum',
-                                                                                                                                'Operativo AdOps':'sum',
-                                                                                                                                'Serving AdOps':'sum',
-                                                                                                                                'Costo Operativo':'mean',
-                                                                                                                                'NOMENCLATURA':'count'})
+        a = a.groupby(['CLIENTE','cliente_nomenclatura','MARCA','campaña_nomenclatura','llave_ventas','llave_unica_fic','Plt','Plataforma','Versión',
+                       'Inicio','Fin','Año-Mes','Mes','tipo_presupuesto','tipo_2'], as_index = False).agg(
+                                                                                                       {'Inversión AdOps':'sum',
+                                                                                                        'Operativo AdOps':'sum',
+                                                                                                        'Serving AdOps':'sum',
+                                                                                                        'Costo Operativo':'mean',
+                                                                                                        'NOMENCLATURA':'count'})
         bien_fic.append(a)
 
     FIC = pd.concat(bien_fic)
@@ -235,13 +250,13 @@ def MP_FIC_tabla(Arch_MP_FIC):
 
     MP_FIC.keys()
     
-    MP_FIC = MP_FIC.iloc[:, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,16,26,27,28,29,30,31]]
+    MP_FIC = MP_FIC.iloc[:, [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,21,36,37,38,39,40,41]]
     
-    MP_FIC.columns = ['cliente','marca','llave_ventas','llave_unica_mp','plataforma_abreviacion','plataforma','versión','fecha_inicio_plan',
-                      'fecha_fin_plan','mes_plan','costo_planeado','kpi_planeado','serving','inversión_plataforma','inversión_total'
+    MP_FIC.columns = ['cliente','cliente_nomenclatura','marca','campaña_nomenclatura','llave_ventas','llave_unica_mp','plataforma_abreviacion','plataforma','versión','fecha_inicio_plan',
+                      'fecha_fin_plan','Año-Mes','mes_plan','tipo_presupuesto','tipo_2','costo_planeado','kpi_planeado','serving','inversión_plataforma','inversión_total'
                       ,'plan_x','inversión_AdOps','Operativo_AdOps','Serving_AdOps','costo_operativo','conteo_MP_FIC','plan_y']
     
-    return MP_FIC, MP, FIC
+    return MP_FIC, MP, FIC, MP_Duplicados, FIC_Duplicados
 
 ##############################################################################################################
 #Validaciones individuales

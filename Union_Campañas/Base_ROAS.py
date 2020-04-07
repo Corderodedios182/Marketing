@@ -46,7 +46,7 @@ mp = tablas_mp_fic[1]
 fic = tablas_mp_fic[2] 
 
 #Cuadrando el mp
-mp_fic.keys()
+list(enumerate(mp_fic.keys()))
 mp_fic['conteo'] = 1
 #Veamos que podemos tener algunos duplicados por los temas de la llave que no es unica
 #Duplicado incorrecto
@@ -69,19 +69,20 @@ c = fic[fic.llave_ventas.str.contains('2003_gwep_aurum_pi_pfm_SEM')] #la platafo
 
 
 #De esta manera el mp ya no cuenta con registros duplicados
-cuadrar = mp_fic.groupby(['cliente','marca','llave_ventas','llave_unica_mp','plataforma','plataforma_abreviacion','versión',
-                      'fecha_inicio_plan','fecha_fin_plan','mes_plan','plan_x'], as_index = False).agg({
-                                                                                                        'costo_planeado':'mean',
-                                                                                                        'kpi_planeado':'mean',
-                                                                                                        'serving':'mean',
-                                                                                                        'inversión_plataforma':'mean',
-                                                                                                        'inversión_total':'mean',
-                                                                                                        'inversión_AdOps':'mean',
-                                                                                                        'Operativo_AdOps':'mean',
-                                                                                                        'Serving_AdOps':'mean',
-                                                                                                        'costo_operativo':'mean',
-                                                                                                        'conteo_MP_FIC':'sum',
-                                                                                                        'conteo':'sum'})
+cuadrar = mp_fic.groupby(['cliente','cliente_nomenclatura','marca','campaña_nomenclatura','llave_ventas','llave_unica_mp','plataforma',
+                          'plataforma_abreviacion','versión','fecha_inicio_plan','fecha_fin_plan','Año-Mes','mes_plan','tipo_presupuesto',
+                          'tipo_2','plan_x'], as_index = False).agg({
+                                                                      'costo_planeado':'mean',
+                                                                      'kpi_planeado':'mean',
+                                                                      'serving':'mean',
+                                                                      'inversión_plataforma':'mean',
+                                                                      'inversión_total':'mean',
+                                                                      'inversión_AdOps':'mean',
+                                                                      'Operativo_AdOps':'mean',
+                                                                      'Serving_AdOps':'mean',
+                                                                      'costo_operativo':'mean',
+                                                                      'conteo_MP_FIC':'sum',
+                                                                      'conteo':'sum'})
                           
 #El valor se vuelve unico pero el fic se promedia
 b = cuadrar[cuadrar.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
@@ -93,20 +94,22 @@ cuadrar.sum()
 
 a = mp_fic[(mp_fic.cliente == 'Petco') & (mp_fic.marca == 'Petco') & (mp_fic.mes_plan == 'Marzo') & (mp_fic.versión == 'V1') & (mp_fic.plataforma == 'Facebook')]
 
-#se le hace esta agrupacion para que no tentamos duplicados erroneos
-mp_fic = mp_fic.groupby(['cliente','marca','llave_ventas','llave_unica_mp','plataforma','plataforma_abreviacion','versión',
-                      'fecha_inicio_plan','fecha_fin_plan','mes_plan','plan_x'], as_index = False).agg({
-                                                                                                        'costo_planeado':'mean',
-                                                                                                        'kpi_planeado':'mean',
-                                                                                                        'serving':'mean',
-                                                                                                        'inversión_plataforma':'mean',
-                                                                                                        'inversión_total':'mean',
-                                                                                                        'inversión_AdOps':'mean',
-                                                                                                        'Operativo_AdOps':'mean',
-                                                                                                        'Serving_AdOps':'mean',
-                                                                                                        'costo_operativo':'mean',
-                                                                                                        'conteo_MP_FIC':'sum',
-                                                                                                        'conteo':'sum'})
+#se le hace esta agrupacion para que no tengamos duplicados erroneos
+mp_fic = mp_fic.groupby(['cliente','cliente_nomenclatura','marca','campaña_nomenclatura','llave_ventas','llave_unica_mp','plataforma',
+                          'plataforma_abreviacion','versión','fecha_inicio_plan','fecha_fin_plan','Año-Mes','mes_plan','tipo_presupuesto',
+                          'tipo_2','plan_x'], as_index = False).agg({
+                                                                      'costo_planeado':'mean',
+                                                                      'kpi_planeado':'mean',
+                                                                      'serving':'mean',
+                                                                      'inversión_plataforma':'mean',
+                                                                      'inversión_total':'mean',
+                                                                      'inversión_AdOps':'mean',
+                                                                      'Operativo_AdOps':'mean',
+                                                                      'Serving_AdOps':'mean',
+                                                                      'costo_operativo':'mean',
+                                                                      'conteo_MP_FIC':'sum',
+                                                                      'conteo':'sum'})
+
 
                           
 #-- Plataformas --#
@@ -196,7 +199,30 @@ a = ADWORDS[ADWORDS.llave_ventas.str.contains('pachuca')]
 union[union.cliente.str.contains('Depot')]
 union.cliente.value_counts()
 
-Escritura_Sheets.Escritura(union, 2, Escribir = 'si', header = True)
+union['dias_totales_campaña'] = 0
+union['semana'] = ''
+union['inversión_planeada'] = 0
+union['inversión_mp'] = 0
+union['inversión_diaria'] = 0
+union['ctr'] = 0
+union['llave_analytics'] = union['llave_ventas']
+union['total_conversiones'] = 0 
+union['total_revenue'] = 0
+union['roas'] = 0 
+
+union = union.iloc[:,[0,1,2,4,5,8,13,14,50,11,3,6,7,9,10,34,35,51,16,17,18,19,20,21,22,23,24,52,32,33,47,48,49,53,54,55,36,37,38,39,56,40,41,57,42,43,44,45,58,59,60]]
+
+list(enumerate(union))
+
+#Separamos en version normal
+vn_union = union[~union.versión.str.contains('VC')]
+
+Escritura_Sheets.Escritura(vn_union , 2, Escribir = 'si', header = True, archivo_sheet = 'Base master Roas')
+
+#Separamos en version cliente
+vc_union = union[union.versión.str.contains('VC')]
+
+Escritura_Sheets.Escritura(vc_union , 3, Escribir = 'si', header = True, archivo_sheet = 'Base master Roas')
 
 ##########################################################
 #Cruzes para detectar errores de nomenclatura en mp ó plt#

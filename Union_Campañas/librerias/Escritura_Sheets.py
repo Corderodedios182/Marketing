@@ -18,7 +18,7 @@ from gspread_dataframe import set_with_dataframe #,get_as_dataframe
 
 #Función para depositar la información en el google sheets
 
-def Escritura(Base, hoja, header = False, Escribir = 'no'):
+def Escritura(Base, hoja, header = False, Escribir = 'no', archivo_sheet = 'Validación Nomeclatura Adsocial'):
     
     """Escribe en google sheets los resultados finales, necesitamos tener las credenciales y el sheets debe tener el correo que vienen en las credenciales para tener acceso al sheets
     
@@ -44,7 +44,7 @@ def Escritura(Base, hoja, header = False, Escribir = 'no'):
 
         Base['ultima_actualizacion'] = datetime.now()
     
-        sh = client.open('Validación Nomeclatura Adsocial') #Recordar que el archivo que deseamos leer tiene que tener el correo de la api como persona compartida
+        sh = client.open(archivo_sheet) #Recordar que el archivo que deseamos leer tiene que tener el correo de la api como persona compartida
         worksheet = sh.get_worksheet(hoja) #Base_master_python
         #sh.worksheets()
         
