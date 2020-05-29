@@ -28,23 +28,82 @@ Mes = '2002_Febrero'
 Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
 Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
 
-#Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/*.csv')
-#Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/*.xlsx')
 
 def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
-    Arch_FB = [x for x in Archivos_xlsx if "FB" in x]
+    ####################
+    #Funciones de apoyo#
+    ####################
+    
+    #Fechas 
+    def Formato_Fechas(Base, Columna):
+        #Es la fecha de inicio del reporte y final del reporte
+        if  len((Base.loc[0,Columna]).split(f" - ")) == 2:
+            fechas = Base[Columna].astype(str).str.split(" - ",expand = True)
+            fechas = pd.DataFrame(fechas)
+            fechas.columns = ['inicio_reporte','fin_reporte']
+     
+            Base['inicio_reporte'] = fechas.iloc[:,0]
+            Base['fin_reporte'] = fechas.iloc[:,1]
+            
+            Base.inicio_reporte = Base.inicio_reporte.apply(lambda x: str(x).replace("['",""))
+            Base.fin_reporte = Base.fin_reporte.apply(lambda x: str(x).replace("']",""))
+            
+            Base.inicio_reporte = pd.to_datetime(Base.inicio_reporte,format = "%Y-%m-%d")
+            Base.fin_reporte = pd.to_datetime(Base.fin_reporte,format = "%Y-%m-%d")
+            
+            return Base
+        #En caso de reportes diarios solo saca una fecha el reporte con esto igualamos inicio y fin
+        else:
+            Base['inicio_reporte'] = Base.loc[:,Columna]
+            Base['fin_reporte'] = Base.loc[:,Columna]
+            
+            Base.inicio_reporte = Base.inicio_reporte.apply(lambda x: str(x).replace("['",""))
+            Base.fin_reporte = Base.fin_reporte.apply(lambda x: str(x).replace("']",""))
+            
+            Base.inicio_reporte = pd.to_datetime(Base.inicio_reporte,format = "%Y-%m-%d")
+            Base.fin_reporte = pd.to_datetime(Base.fin_reporte,format = "%Y-%m-%d")
+            
+            return Base
+    
+    #mes    
+    def mes(x):
+        if len(str(x)) == 2:
+            y = str(x)
+        else:
+            y = '0' + str(x)
+        return y
+    
+    #Fecha inicio reporte
+    def fechas_inicio(x,y):
+        if x <= y:
+            return y
+        else:
+            return x
+
+    #Fecha fin reporte
+    def fechas_fin(x,y):
+        if x <= y :
+            return x
+        elif y is pd.NaT:
+            return x
+        else:
+            return y
+    
+    ###########
+    #Facebook #
+    ###########    
+    Arch_FB = [x for x in Archivos_csv if "FB" in x]
     
     Facebook = []
     
     for csv in Arch_FB:
         
-        tmp = pd.read_excel(csv, parse_dates = ['Inicio'])
-        tmp = tmp.iloc[1:,]
+        tmp = pd.read_csv(csv, parse_dates = ['Inicio'])
         tmp['Archivo'] = csv
         Facebook.append(tmp)
     
-    Facebook = pd.concat(Facebook)
+    Facebook = pd.concat(Facebook).reset_index()
 
     #Revisiones rápidas
     Facebook.Archivo.value_counts()
@@ -60,31 +119,6 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     Facebook.Finalización = Facebook.Finalización.apply(lambda x : str(x).replace('Ongoing',''))
     Facebook.Finalización = pd.to_datetime(Facebook.Finalización,format = "%Y-%m-%d",errors = 'ignore')
     
-    #Fechas 
-    def Formato_Fechas(Base, Columna):
-
-        fechas = Base[Columna].astype(str).str.split(" - ",expand = True)
-        fechas = pd.DataFrame(fechas)
-        fechas.columns = ['inicio_reporte','fin_reporte']
-     
-        Base['inicio_reporte'] = fechas.iloc[:,0]
-        Base['fin_reporte'] = fechas.iloc[:,1]
-       
-        Base.inicio_reporte = Base.inicio_reporte.apply(lambda x: str(x).replace("['",""))
-        Base.fin_reporte = Base.fin_reporte.apply(lambda x: str(x).replace("']",""))
-    
-        Base.inicio_reporte = pd.to_datetime(Base.inicio_reporte,format = "%Y-%m-%d")
-        Base.fin_reporte = pd.to_datetime(Base.fin_reporte,format = "%Y-%m-%d")
-
-        return Base
-    
-    def mes(x):
-        if len(str(x)) == 2:
-            y = str(x)
-        else:
-            y = '0' + str(x)
-        return y
-
     Facebook = Formato_Fechas(Facebook, 'Mes')
 
     Facebook.dtypes
@@ -93,6 +127,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     #Extracción del nombre para cruzarlo con ventas
     C_Facebook = Facebook.loc[:,'Nombre de la campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
     C_Facebook.columns = cols
+    C_Facebook.loc[:,'Año-Mes'] = Facebook.inicio_reporte.apply(lambda x : str(x.year)[:2] + Facebook['Mes'])
     C_Facebook = C_Facebook[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
 
     Facebook['llave_plataformas'] = C_Facebook ; del C_Facebook
@@ -109,7 +144,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
         #Se eliminan las campañas provenientes de estás cuentas puede que no mache con el MP
     Facebook = Facebook.loc[ ~( (Facebook.cuenta.str.contains('Adsocial'))  |  (Facebook.cuenta.str.contains('Dokkoi')) ) ]
     Facebook.llave_plataformas = Facebook.llave_plataformas.str.lower()
-    Facebook.llave_plataformas = Facebook.llave_plataformas + str("_FB")
+    Facebook.llave_plataformas = Facebook.llave_plataformas + str("_fb")
 
     Facebook['conteo'] = 1
 
@@ -164,38 +199,23 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
             bien_facebook.append(b)
     
     bien_facebook = pd.concat(bien_facebook)
-    
-    #Fecha inicio reporte
-    def fechas_inicio(x,y):
-        if x <= y:
-            return y
-        else:
-            return x
-
-    #Fecha fin reporte
-    def fechas_fin(x,y):
-        if x <= y :
-            return x
-        elif y is pd.NaT:
-            return x
-        else:
-            return y
-    
-    bien_facebook['inicio'] = [fechas_inicio(x,y) for x, y in zip(bien_facebook.inicio_campaña,bien_facebook.inicio_reporte)] #Este es el bueno      
-    bien_facebook['fin'] = [fechas_fin(x,y) for x, y in zip(bien_facebook.fin_reporte,bien_facebook.fin_campaña)] #Este es el bueno
-    bien_facebook['dias_actividad_reporte'] = (bien_facebook.fin - bien_facebook.inicio).dt.days + 1
+        
+    bien_facebook['inicio_campaña_reporte'] = [fechas_inicio(x,y) for x, y in zip(bien_facebook.inicio_campaña,bien_facebook.inicio_reporte)] #Este es el bueno      
+    bien_facebook['fin_campaña_reporte'] = [fechas_fin(x,y) for x, y in zip(bien_facebook.fin_reporte,bien_facebook.fin_campaña)] #Este es el bueno
+    bien_facebook['dias_actividad_reporte'] = (bien_facebook['fin_campaña_reporte'] - bien_facebook['inicio_campaña_reporte']).dt.days + 1
     
     bien_facebook.archivo.value_counts()
+    bien_facebook.inicio_reporte.value_counts()
     
     #-- Adwords -- #
     Arch_Adwords = [x for x in Archivos_csv if "Adwords" in x]
     
     Adwords = []
     fallas = []
-
+    
     for csv in Arch_Adwords:
         try:
-            tmp = pd.read_csv(csv, delimiter = ',', skiprows = 3, encoding = "latin-1", names = ['Campaña', 'Mes', 'Fecha de inicio', 'Fecha de finalizacion', 'divisa','Costo', 'Impresiones', 'Clics'], header = None)
+            tmp = pd.read_csv(csv, delimiter = ',', skiprows = 3, encoding = "latin-1", names = ['Cuenta','Campaña', 'Mes', 'Fecha de inicio', 'Fecha de finalizacion', 'divisa','Costo', 'Impresiones', 'Clics'], header = None)
             tmp['Archivo'] = csv
             #Extreamos las fechas del nombre del reporte
             Fechas = list(tmp.Archivo.unique())
@@ -251,14 +271,14 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
 
     #Extracción del nombre para cruzar con ventas
     
-    C_Adwords = Adwords.loc[:,'campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
+    C_Adwords = Adwords.loc[:,'campaña'].str.split("_",10,expand = True).iloc[:,:6] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2","plataforma"]
     C_Adwords.columns = cols
+    C_Adwords.plataforma = C_Adwords.plataforma.fillna('SEM')
     C_Adwords.loc[:,'Año-Mes'] = Adwords.inicio_reporte.apply(lambda x : str(x.year)[:2] + Adwords['mes'])
     C_Adwords = C_Adwords[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
     
     Adwords['llave_plataformas'] = C_Adwords ; del C_Adwords
     Adwords['llave_plataformas'] = Adwords['llave_plataformas'].str.lower()
-    Adwords['llave_plataformas'] = Adwords['llave_plataformas'] + str("_SEM")
     
     #Formato numerico
     Adwords.clics = Adwords.clics.apply(lambda x : str(x).replace(',','')).astype('int')
@@ -269,7 +289,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     Adwords['conteo'] = 1
     
     Adwords.fin_campaña = Adwords.fin_campaña.fillna(Adwords.fin_reporte)
-    Adwords.cuenta = Adwords.cuenta.fillna('GWEP')
+    #Adwords.cuenta = Adwords.cuenta.fillna('GWEP')
     
     Adwords['conversiones'] = 0
     Adwords['revenue'] = 0
@@ -278,8 +298,14 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     Adwords['revenue_directo'] = 0
     Adwords['revenue_asistido'] = 0
     
-    bien_adwords = Adwords.groupby(['plataforma','archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte',
-                                    'inicio_campaña','fin_campaña','divisa'], as_index = False).agg({
+    bien_adwords = []
+        
+    #Filtro por archivo
+    for i in range(0, len(Adwords.archivo.unique())):
+        
+        Adwords_0 = Adwords[Adwords.archivo == Adwords.archivo.unique()[i]]
+        Adwords_0 = Adwords_0.groupby(['plataforma','archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte',
+                                       'inicio_campaña','fin_campaña','divisa'], as_index = False).agg({
                                                                                                 'dinero_gastado':'mean',
                                                                                                 'impresiones':'mean',
                                                                                                 'clics':'mean',
@@ -291,9 +317,37 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
                                                                                                 'revenue_asistido':'sum',
                                                                                                 'conteo':'sum'})
     
-    bien_adwords['inicio'] = [ fechas_inicio(x,y) for x, y in zip(bien_adwords.inicio_campaña, bien_adwords.inicio_reporte) ]
-    bien_adwords['fin'] = [fechas_fin(x,y) for x, y in zip(bien_adwords.fin_reporte,bien_adwords.fin_campaña)] #Este es el bueno
-    bien_adwords['dias_actividad_reporte'] = (bien_adwords.fin - bien_adwords.inicio).dt.days + 1
+        Adwords_0 = Adwords_0.sort_values('llave_plataformas')
+        #Filtro individual por llave_plataforma para agrupar y colocar adecuadamente el inicio y fin de la campaña
+        for j in range(0,len(Adwords_0.llave_plataformas.unique())):
+            
+            a = Adwords_0[Adwords_0.llave_plataformas == Adwords_0.llave_plataformas.unique()[j]]
+            
+            a.inicio_campaña = a.inicio_campaña.min()
+            
+            a.fin_campaña = a.fin_campaña.max()
+            
+            b = a.groupby(['plataforma','archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte','inicio_campaña','fin_campaña','divisa'], as_index = False).agg({
+                                                                                       'dinero_gastado':'sum',
+                                                                                       'impresiones':'sum',
+                                                                                       'clics':'sum',
+                                                                                       'conversiones':'sum',
+                                                                                       'revenue':'sum',
+                                                                                       'conversiones_directas':'sum',
+                                                                                       'conversiones_asistidas':'sum',
+                                                                                       'revenue_directo':'sum',
+                                                                                       'revenue_asistido':'sum',
+                                                                                       'conteo':'sum'})
+            bien_adwords.append(b)
+    
+    bien_adwords = pd.concat(bien_adwords)
+        
+    bien_adwords['inicio_campaña_reporte'] = [ fechas_inicio(x,y) for x, y in zip(bien_adwords.inicio_campaña, bien_adwords.inicio_reporte) ]
+    bien_adwords['fin_campaña_reporte'] = [fechas_fin(x,y) for x, y in zip(bien_adwords.fin_reporte,bien_adwords.fin_campaña)] #Este es el bueno
+    bien_adwords['dias_actividad_reporte'] = (bien_adwords['fin_campaña_reporte'] - bien_adwords['inicio_campaña_reporte']).dt.days + 1
+    
+    bien_adwords.archivo.value_counts()
+    bien_adwords.inicio_reporte.value_counts()
     
     #-- Adform --#
     Arch_Adform = [x for x in Archivos_xlsx if "Adform" in x]
@@ -355,7 +409,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     Adform['llave_plataformas'] = Adform['llave_plataformas'].str.strip()
     
     Adform.llave_plataformas = Adform.llave_plataformas.str.lower()
-    Adform.llave_plataformas = Adform.llave_plataformas + str("_DSP")
+    Adform.llave_plataformas = Adform.llave_plataformas + str("_dsp")
     
     #Formato numerico
     Adform.clics = Adform.clics.apply(lambda x : str(x).replace(',','')).astype('int')
@@ -368,10 +422,17 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     Adform.notnull().all()
     Adform.cuenta.value_counts()
     
-    Adform = Adform.groupby(['plataforma','archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte','inicio_campaña','fin_campaña','divisa'],
-                                                                          as_index = False).agg({'dinero_gastado':'sum',
-                                                                                                'impresiones':'sum',
-                                                                                                'clics':'sum',
+    bien_adform = []
+    
+    #Filtro por archivo
+    for i in range(0, len(Adform.archivo.unique())):
+        
+        Adform_0 = Adform[Adform.archivo == Adform.archivo.unique()[i]]
+        Adform_0 = Adform_0.groupby(['plataforma','archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte',
+                                       'inicio_campaña','fin_campaña','divisa'], as_index = False).agg({
+                                                                                                'dinero_gastado':'mean',
+                                                                                                'impresiones':'mean',
+                                                                                                'clics':'mean',
                                                                                                 'conversiones':'sum',
                                                                                                 'revenue':'sum',
                                                                                                 'conversiones_directas':'sum',
@@ -380,15 +441,38 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
                                                                                                 'revenue_asistido':'sum',
                                                                                                 'conteo':'sum'})
     
-    Adform.cuenta.value_counts()
-                                                                                                 
-    Adform['inicio'] = [fechas_inicio(x,y) for x, y in zip(Adform.inicio_campaña, Adform.inicio_reporte)] #Este es el bueno      
-    Adform['fin'] = [fechas_fin(x,y) for x, y in zip(Adform.fin_reporte, Adform.fin_campaña)] #Este es el bueno
-    Adform['dias_actividad_reporte'] = (Adform.fin - Adform.inicio).dt.days + 1
+        Adform_0 = Adform_0.sort_values('llave_plataformas')
+        #Filtro individual por llave_plataforma para agrupar y colocar adecuadamente el inicio y fin de la campaña
+        for j in range(0,len(Adform_0.llave_plataformas.unique())):
+            
+            a = Adform_0[Adform_0.llave_plataformas == Adform_0.llave_plataformas.unique()[j]]
+            
+            a.inicio_campaña = a.inicio_campaña.min()
+            
+            a.fin_campaña = a.fin_campaña.max()
+            
+            b = a.groupby(['plataforma','archivo','cuenta','llave_plataformas','mes','inicio_reporte','fin_reporte','inicio_campaña','fin_campaña','divisa'], as_index = False).agg({
+                                                                                       'dinero_gastado':'sum',
+                                                                                       'impresiones':'sum',
+                                                                                       'clics':'sum',
+                                                                                       'conversiones':'sum',
+                                                                                       'revenue':'sum',
+                                                                                       'conversiones_directas':'sum',
+                                                                                       'conversiones_asistidas':'sum',
+                                                                                       'revenue_directo':'sum',
+                                                                                       'revenue_asistido':'sum',
+                                                                                       'conteo':'sum'})
+            bien_adform.append(b)
+    
+    bien_adform = pd.concat(bien_adform)
+    
+    bien_adform['inicio_campaña_reporte'] = [fechas_inicio(x,y) for x, y in zip(bien_adform.inicio_campaña, bien_adform.inicio_reporte)] #Este es el bueno      
+    bien_adform['fin_campaña_reporte'] = [fechas_fin(x,y) for x, y in zip(bien_adform.fin_reporte, bien_adform.fin_campaña)] #Este es el bueno
+    bien_adform['dias_actividad_reporte'] = (bien_adform['fin_campaña_reporte'] - bien_adform['inicio_campaña_reporte']).dt.days + 1
 
     #Conversiones Asistidas y directas de Adform    
-    a = Adform[ Adform.dias_actividad_reporte <= 0 ]
-    b = Adform[ Adform.dias_actividad_reporte > 0 ]
+    a = bien_adform[ bien_adform.dias_actividad_reporte <= 0 ]
+    b = bien_adform[ bien_adform.dias_actividad_reporte > 0 ]
     
     a = a[a.conversiones > 0]
     a.conversiones_asistidas = a.conversiones
@@ -397,14 +481,15 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     b.conversiones_directas = b.conversiones
     b.revenue_directo = b.revenue
     
-    bien_Adform = pd.concat([a,b])
+    bien_adform = pd.concat([a,b])
     
     Adform.archivo.value_counts()
+    Adform.inicio_reporte.value_counts()
                                                                                                 
     #Unión de las Bases
     # -Unión de todo
     #Facebook.shape[0] + Adwords.shape[0] + Adform.shape[0]
-    Plataformas = pd.concat([bien_facebook, bien_adwords, bien_Adform])
+    Plataformas = pd.concat([bien_facebook, bien_adwords, bien_adform])
     
     return Plataformas
 

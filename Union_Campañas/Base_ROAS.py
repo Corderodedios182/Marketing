@@ -3,7 +3,7 @@
 """
 Created on Tue Feb 18 12:13:57 2020
 
-El siguiente script creará la Base de los ROAS
+El siguiente script creará la Base de los ROAS.
 
 Los Archivos se encuentran en: /home/carlos/Dropbox/ROAS 2020 (Cada mes se crea la base del Mes y se colocan los reportes de las Plataformas)
 
@@ -22,98 +22,45 @@ Los Archivos se encuentran en: /home/carlos/Dropbox/ROAS 2020 (Cada mes se crea 
 import pandas as pd
 import os
 import glob
+from datetime import datetime, timedelta 
+pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
-#En este script se encuentra la función que nos arroja la unión del MP y FIC
-
+#Definimos la ruta para poder trabajar con los diferentes Scripts de apoyo
 os.chdir('/home/carlos/Documentos/3_Adsocial/Marketing/Union_Campañas')
 os.listdir()
 
-from librerias import MP_FIC
-from librerias import Plataformas
-from librerias import Escritura_Sheets
-pd.set_option('display.float_format', lambda x: '%.10f' % x)
+from librerias import MP_FIC #Une, limpia el Archivo KPIS_2020
+from librerias import Plataformas #Une, limpia y les da el mismo formato a los Reportes Semanales de las Plataformas.
+from librerias import Escritura_Sheets #Escribe la información en Google Sheets
 
-#Aquí descargo el nuevo archivo de KPIS
+#--------PRIMERO TRABAJAMOS CON ARCHIVO KPIS--------#
+
+#Aplicando la función MP_FIC_tabla() creada para mejorar la legibilidad del código.
+
 os.chdir('/home/carlos/Dropbox/ROAS 2020')
 Archivos = os.listdir()
 
 #-- MP_FIC (KPI) --#
-#La funcion MP_FIC_tabla que vive en el script MP_FIC nos ayuda a procesar el MP y FIC, descargado del google drive KPIS 2020
-Arch_MP_FIC = [x for x in Archivos if "KPIS 2020 .xlsx" in x]
+#La funcion MP_FIC_tabla que vive en el script MP_FIC nos ayuda a procesar el MP y FIC, descargado del google drive KPIS 2020.
+Arch_MP_FIC = [x for x in Archivos if "Hot Sale - KPIS 2020 - AdSocial.xlsx" in x]
+
 #La función regresa una tupla con mp_fic, mp, fic
 tablas_mp_fic =  MP_FIC.MP_FIC_tabla(Arch_MP_FIC)
-
+#Base MP y FIC
 mp_fic = tablas_mp_fic[0]
-mp = tablas_mp_fic[1] 
-fic = tablas_mp_fic[2] 
 
-#Cuadrando el mp
-list(enumerate(mp_fic.keys()))
-mp_fic['conteo'] = 1
-#Veamos que podemos tener algunos duplicados por los temas de la llave que no es unica
-#Duplicado incorrecto
-a = mp_fic[mp_fic.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
-b = mp[mp.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
-c = fic[fic.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
-#Duplicado correcto
-a = mp_fic[mp_fic.llave_ventas.str.contains('2003_od_brother-impresion_ppf_pfm_SEM')]
-b = mp[mp.llave_ventas.str.contains('2003_od_brother-impresion_ppf_pfm_SEM')]
-c = fic[fic.llave_ventas.str.contains('2003_od_brother-impresion_ppf_pfm_SEM')]
-
-#nuevos duplicados
-a = mp_fic[mp_fic.llave_ventas.str.contains('2002_gicsa_explanadapachuca_pi_mkt_FB')]
-b = mp[mp.llave_ventas.str.contains('2002_gicsa_explanadapachuca_pi_mkt_FB')]
-c = fic[fic.llave_ventas.str.contains('2002_gicsa_explanadapachuca_pi_mkt_FB')] #esta mal escrito la marca
-
-a = mp_fic[mp_fic.llave_ventas.str.contains('2003_gwep_aurum_pi_pfm_SEM')]
-b = mp[mp.llave_ventas.str.contains('2003_gwep_aurum_pi_pfm_SEM')]
-c = fic[fic.llave_ventas.str.contains('2003_gwep_aurum_pi_pfm_SEM')] #la plataforma no es la misma
+del Arch_MP_FIC, Archivos
 
 
-#De esta manera el mp ya no cuenta con registros duplicados
-cuadrar = mp_fic.groupby(['cliente','cliente_nomenclatura','marca','campaña_nomenclatura','llave_ventas','llave_unica_mp','plataforma',
-                          'plataforma_abreviacion','versión','fecha_inicio_plan','fecha_fin_plan','Año-Mes','mes_plan','tipo_presupuesto',
-                          'tipo_2','plan_x'], as_index = False).agg({
-                                                                      'costo_planeado':'mean',
-                                                                      'kpi_planeado':'mean',
-                                                                      'serving':'mean',
-                                                                      'inversión_plataforma':'mean',
-                                                                      'inversión_total':'mean',
-                                                                      'inversión_AdOps':'mean',
-                                                                      'Operativo_AdOps':'mean',
-                                                                      'Serving_AdOps':'mean',
-                                                                      'costo_operativo':'mean',
-                                                                      'conteo_MP_FIC':'sum',
-                                                                      'conteo':'sum'})
-                          
-#El valor se vuelve unico pero el fic se promedia
-b = cuadrar[cuadrar.llave_ventas.str.contains('2003_gicsa_paseointerlomas_pi_mkt_PV')]
 
-duplicados = cuadrar[cuadrar.conteo > 1]
+#--------UNION INFORMACIÓN PLATAFORMAS--------#
+#
+#¿Como unimos toda la información de las Plataformas?,
+#Si la Carpeta donde colocamos los reportes tiene el formato adecuado de Carpetas funcionará correctamente.
+#
+#Ejemplo: 2001_Enero -> Semanal -> 1:01:2020 al 8:01:2020 (d:mm:yyyy)
 
-cuadrar = cuadrar.groupby(['plataforma','plataforma_abreviacion'], as_index = False).sum()
-cuadrar.sum()
-
-#se le hace esta agrupacion para que no tengamos duplicados erroneos
-mp_fic = mp_fic.groupby(['cliente','cliente_nomenclatura','marca','campaña_nomenclatura','llave_ventas','llave_unica_mp','plataforma',
-                          'plataforma_abreviacion','versión','fecha_inicio_plan','fecha_fin_plan','Año-Mes','mes_plan','tipo_presupuesto',
-                          'tipo_2','plan_x'], as_index = False).agg({
-                                                                      'costo_planeado':'mean',
-                                                                      'kpi_planeado':'mean',
-                                                                      'serving':'mean',
-                                                                      'inversión_plataforma':'mean',
-                                                                      'inversión_total':'mean',
-                                                                      'inversión_AdOps':'mean',
-                                                                      'Operativo_AdOps':'mean',
-                                                                      'Serving_AdOps':'mean',
-                                                                      'costo_operativo':'mean',
-                                                                      'conteo_MP_FIC':'sum',
-                                                                      'conteo':'sum'})
-
-tmp = mp_fic.groupby(['mes_plan','plataforma'], as_index = False).sum()
-                          
-#-- Plataformas --#
-#Une los archivos de las plataformas que se dejan en las carpetas del dropbox, se pueden unir de forma semanal o mensual (la fecha de referencia será la fecha del reporte).
+#Función que extraer el nombre de los Archivos que tenemos en las carpetas de los reportes
 def Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal'):
     if tipo_union == 'Semanal':
         Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.csv')
@@ -123,36 +70,63 @@ def Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal'):
         Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.xlsx')
     return Archivos_csv, Archivos_xlsx
 
-#Solo es necesario especificar el nombre del Mes de la carpeta y el tipo de union.
+#Hot Sale
+Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/2005_Mayo/Semanal/Hot Sale/**/*.csv')
+Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/2005_Mayo/Semanal/Hot Sale/**/*.xlsx')
+
+#Aplicación de la Función Archivos Plataformas
+#Se puede observar los Archivos que tenemos por Mes.
 archivos_csv_01, archivos_xlsx_01 = Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal')
 archivos_csv_02, archivos_xlsx_02 = Archivos_Plataformas(mes = '2002_Febrero', tipo_union = 'Semanal')
 archivos_csv_03, archivos_xlsx_03 = Archivos_Plataformas(mes = '2003_Marzo', tipo_union = 'Semanal')
+archivos_csv_04, archivos_xlsx_04 = Archivos_Plataformas(mes = '2004_Abril', tipo_union = 'Semanal')
+archivos_csv_05, archivos_xlsx_05 = Archivos_Plataformas(mes = '2005_Mayo', tipo_union = 'Semanal')
 
-#Base con la información de los reportes de todas las plataformas
+#Aplicación de la función Plataformas_tabla, necesita los parametros de archivos.
 plataformas_01 = Plataformas.Plataformas_tabla(archivos_csv_01, archivos_xlsx_01)
 plataformas_02 = Plataformas.Plataformas_tabla(archivos_csv_02, archivos_xlsx_02)
 plataformas_03 = Plataformas.Plataformas_tabla(archivos_csv_03, archivos_xlsx_03)
+plataformas_04 = Plataformas.Plataformas_tabla(archivos_csv_04, archivos_xlsx_04)
+plataformas_05 = Plataformas.Plataformas_tabla(archivos_csv_05, archivos_xlsx_05) #No corre revisar formato de archivo
+
+#Hot Sale
+plataformas = Plataformas.Plataformas_tabla(Archivos_csv, Archivos_xlsx)
+plataformas.plataforma.value_counts()
+
+#Validamos que los archivos sean correctos
+tmp = plataformas_03.groupby(['archivo','inicio_reporte']).count()
 
 plataformas_01.plataforma.value_counts()
 plataformas_02.plataforma.value_counts()
 plataformas_03.plataforma.value_counts()
+plataformas_04.plataforma.value_counts()
 
-plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03])
-plataformas.mes.value_counts()
+#Si nuestros Archivos son correctos, procedemos a unir todos los meses
+plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04])
 
-del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, Arch_MP_FIC, Archivos, plataformas_01, plataformas_02, plataformas_03
+#Tengo que tener llave unica, debe cuadrar el número de registros con la plataformas.
+cuadrar = plataformas.groupby(['archivo','llave_plataformas''']).count()
 
-#a = plataformas_01[plataformas_01.llave_plataformas.str.contains('pachuca')]
+#Podemos borrar lo que no necesitamos para tener nuestras variables de entorno limpias.
+#del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05
+#del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05
+#del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05
+#Arch_MP_FIC, Archivos, plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05
 
+a = plataformas[plataformas.llave_plataformas.str.contains('2005_od_bionet_ppf_pfm')]
+b = mp_fic[mp_fic.llave_ventas.str.contains('bionet')]
 
-#####################################################################################################
-#Base master Roas union
+#--------CREACION BASE MASTER (UNION KPIS 2020 Y PLATAFORMAS)--------#
 #
-# Analisis de la union del mp y plataformas, división de casos (intersección, uniones y exclusiones) 
-#####################################################################################################
+#   Es la Unión de la información de MP y Plataformas.
+#   Se realizo un analisis de la union del mp y plataformas, se realizo un outer join.
+#   El cual permite desglosar paso por paso el cruce de información, división de casos (intersección, uniones y exclusiones) .
 
+#--Toda la información--#
 tmp = pd.merge(mp_fic, plataformas, how = 'outer', left_on = 'llave_ventas', right_on = 'llave_plataformas')
 
+#Validación individual de los cruzes de las plataformas
+tmp = tmp.rename(columns = {'plataforma_x':'plataforma'})
 tmp['comentario'] = ""
 
 #-Eliminamos filas que no tienen nada en las plataformas
@@ -171,77 +145,265 @@ tmp_d_1 = tmp_d[ tmp_d.llave_plataformas.isnull() ]
  #Son unicas y no todas deben estar en las plataformas
 len(tmp_d_1.llave_unica_mp.unique())
  #Dividimos en casos campañas de PV y ~PV
-tmp_d_1_1 = tmp_d_1[ ~(tmp_d_1.plataforma_abreviacion.str.contains('PV')) ] #Se tiene que revisar si se encuentra mal la nomenclatura en los reportes
-tmp_d_1_2 = tmp_d_1[ (tmp_d_1.plataforma_abreviacion.str.contains('PV')) ] #Se regresará a la base final ya que no contamos con datos de estas plataformas
+tmp_d_1_1 = tmp_d_1[ ~(tmp_d_1.plataforma.str.contains('pv')) ] #Se tiene que revisar si se encuentra mal la nomenclatura en los reportes
+tmp_d_1_2 = tmp_d_1[ (tmp_d_1.plataforma.str.contains('pv')) ] #Se regresará a la base final ya que no contamos con datos de estas plataformas
 tmp_d_1_2['comentario'] = "información de provedores no contamos con reportes de plataformas"
 
 #-Tengo en las plataformas y no las encontre en mp
 tmp_d_2 = tmp_d[ tmp_d.llave_ventas.isnull() ]
- #Dividimos en casos 20 y ~20
+#Esta informacion como no viene en el mp le tengo que generar ciertas columnas.
+tmp_d_2['cuenta'] = tmp_d_2['cuenta'].str.lower()
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('gicsa'), 'cliente'] = 'GICSA'
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('gwep'), 'cliente'] = 'GWEP'
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('office'), 'cliente'] = 'Office Depot'
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('petco'), 'cliente'] = 'Petco'
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('radio'), 'cliente'] = 'RadioShack'
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('sodexo'), 'cliente'] = 'Sodexo'
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('tequila'), 'cliente'] = 'Tequila 1921'
+tmp_d_2.loc[tmp_d_2['cuenta'].str.contains('home'), 'cliente'] = 'The Home Store'
+
+tmp_d_2['llave_ventas'] = tmp_d_2['llave_plataformas']
+
+tmp_d_2['Año-Mes'] = "20" + tmp_d_2['mes'] 
+
+tmp_d_2['plataforma_x'] = tmp_d_2['plataforma_y']
+
+tmp_d_2.loc[tmp_d_2['plataforma_y'].str.contains('Adform'), 'plataforma'] = 'dsp'
+tmp_d_2.loc[tmp_d_2['plataforma_y'].str.contains('Adwords'), 'plataforma'] = 'sem'
+tmp_d_2.loc[tmp_d_2['plataforma_y'].str.contains('Facebook'), 'plataforma'] = 'fb'
+
+#Dividimos en casos 20 y ~20
 tmp_d_2_1 = tmp_d_2[ (tmp_d_2.llave_plataformas.str.contains('20')) ] #Se tiene que revisar si encuentra mal en el mp
 tmp_d_2_2 = tmp_d_2[ ~(tmp_d_2.llave_plataformas.str.contains('20')) ] #Se regresará a la base final ya que son datos buenos (conversiones asistidas, gereraron un gasto)
+tmp_d_2_2['versión'] = 'No aplica'
+
 tmp_d_2_2['comentario'] = "conversiones asistidas campañas que no tengo en el mp"
 
-##########################
-#¿Con que me debo quedar?
-tmp_union = pd.concat([ tmp_c, tmp_d_1_2, tmp_d_2_2 ])
+#--¿Con que me debo quedar?--#
+#El objetivo actual es tener un monitoreo de las campañas.
+#Por lo tanto solo me quedo con campañas que se encuentran en el MP y en Plataformas.
+tmp_union = pd.concat([ tmp_c]) 
 
-tmp_union = tmp_union.fillna('')
-tmp_union.mes_plan.value_counts()
-
-tmp_union.cliente.value_counts()
-
-########################################
-#¿Que formato final debe tener la base?
-
-tmp_union['dias_totales_campaña'] = 0
-tmp_union['semana'] = ''
-tmp_union['inversión_planeada'] = 0
-tmp_union['inversión_mp'] = 0
-tmp_union['inversión_diaria'] = 0
-tmp_union['ctr'] = 0
-tmp_union['llave_analytics'] = tmp_union['llave_ventas']
-tmp_union['total_conversiones'] = 0 
-tmp_union['total_revenue'] = 0
-tmp_union['roas'] = 0 
+tmp_union.comentario.value_counts()
+tmp_union = tmp_union.fillna(0)
+tmp_union['conteo_x'] = 1
 
 list(enumerate(tmp_union.keys()))
 
-tmp_union = tmp_union.iloc[:,[0,1,2,4,5,8,13,14,50,11,12,3,6,7,9,10,34,35,51,16,17,18,19,20,21,22,23,24,52,32,33,47,48,49,53,54,55,36,37,38,39,56,40,41,57,42,43,44,45,58,59,60]]
+#Los valores unicos deben ser de información correcta, que tenemos en el mp y en las plataformasa
+tmp_union.plataforma.value_counts()
+validacion = tmp_union.groupby(['llave_unica_mp', 'archivo']).count()
 
-list(enumerate(tmp_union))
+#Limpieza para variables de entorno que no usaremos despues
+#del tmp, tmp_a, tmp_b, tmp_c, tmp_d, tmp_d_1, tmp_d_1_1, tmp_d_1_2, tmp_d_2, tmp_d_2_1, tmp_d_2_2
 
-FB_t = tmp_union[tmp_union.plataforma_abreviacion.str.contains('FB')]
-ADFORM_t = tmp_union[tmp_union.plataforma_abreviacion.str.contains('DSP')]
-ADWORDS_t = tmp_union[tmp_union.plataforma_abreviacion.str.contains('SEM')]
+#--¿Que formato final debe tener la base?--#
+#
+# 1 - Se crea la llave_analytics para poder cruzar con la información de Google Analytics.
+# 2 - Se transforma algunas columnas con cierta nomenclatura.
+# 3 - Se calcula el dinero Gastado Adform.
+# 4 - Se le coloca el número de Semana apartir de la Fechas de los Reportes.
+# 5 - Métricas que se calculan teniendo toda la información unida, ejemplo: 
+#       días semanales, dias mensuales, inversión diaria, inversión semanal.
+
+#Llave Analytics
+tmp_union['llave_analytics'] = tmp_union['llave_ventas'] + "_" + tmp_union.inicio_reporte.apply(lambda x : str(x).split(" ")[0])
+tmp_union['total_conversiones'] = 0 
+tmp_union['total_revenue'] = 0
+
+#Columnas con cierta nomenclatura
+tmp_union.loc[tmp_union['plataforma'].str.contains('fb'), 'plataforma'] = 'Facebook'
+tmp_union.loc[tmp_union['plataforma'].str.contains('sem'), 'plataforma'] = 'Google Search'
+tmp_union.loc[tmp_union['plataforma'].str.contains('gdn'), 'plataforma'] = 'Google Display'
+tmp_union.loc[tmp_union['plataforma'].str.contains('ytb'), 'plataforma'] = 'Google YouTube'
+tmp_union.loc[tmp_union['plataforma'].str.contains('dsp'), 'plataforma'] = 'Programmatic'
+
+#Dinero gastado Adform
+tmp_union.loc[tmp_union['plataforma'] == 'Programmatic', 'dinero_gastado'] = (tmp_union['costo_planeado'] * tmp_union['impresiones'])/1000
+tmp_union.loc[ (tmp_union['dinero_gastado'] > tmp_union['inversión_total']) & (tmp_union['plataforma'] == 'Programmatic') , 'dinero_gastado' ] = tmp_union['inversión_total']
+
+#Colocación de la Semana
+tmp_union['semana'] = ''
+d = tmp_union.inicio_reporte.unique()
+d = pd.DataFrame( d[d != 0]).T
+d.columns = ['inicio_reporte']
+d = d.sort_values('inicio_reporte').reset_index()
+d['index'] = d.index
+d.columns = ['semana','inicio_reporte']
+d.semana = d.semana + 1
+d.semana = d.semana.astype('str')
+d['semana'] = d.semana
+
+for i in range(0,d.semana.shape[0]):
+    tmp_union.loc[tmp_union.inicio_reporte == d.inicio_reporte[i], 'semana'] = d.semana[i]
+
+#Metricas semanales
+tmp_union = tmp_union[tmp_union.fin_campaña_reporte != 0]
+
+tmp_union['dias_mes'] = ((tmp_union.fecha_fin_plan - tmp_union.fecha_inicio_plan) + timedelta(days=1)).dt.days
+tmp_union['dias_semana'] = ((tmp_union.fin_campaña_reporte - tmp_union.inicio_campaña_reporte) + timedelta(days=1)).dt.days
+
+tmp_union.loc[tmp_union.dias_semana < 0, 'dias_semana'] = 0
+
+tmp_union['kpi_planeado_diario'] = round(tmp_union.kpi_planeado / tmp_union.dias_mes)
+tmp_union['kpi_planeado_semanal'] = round(tmp_union.kpi_planeado_diario * tmp_union.dias_semana)
+
+tmp_union['inversion_plataforma_diaria'] = round(tmp_union.inversión_plataforma / tmp_union.dias_mes)
+tmp_union['inversion_plataforma_semanal'] = round(tmp_union.inversion_plataforma_diaria * tmp_union.dias_semana)
+
+tmp_union['inversion_AdOps_diaria'] = round(tmp_union.Operativo_AdOps / tmp_union.dias_mes)
+tmp_union['inversion_AdOps_semanal'] = round(tmp_union.inversion_AdOps_diaria * tmp_union.dias_semana)
+
+#validamos el formato
+list(enumerate(tmp_union.keys()))
+
+#columnas semanal
+tmp_union = tmp_union.loc[:,['cliente_nomenclatura','llave_ventas',	'llave_unica_mp', 'versión',
+                             'tipo_presupuesto', 'tipo_2', 'comentario', 'Año-Mes', 'mes_plan', 'campaña_nomenclatura',
+                             'plataforma', 'fecha_inicio_plan', 'fecha_fin_plan', 'inicio_campaña',	'fin_campaña',
+                             'costo_planeado', 'kpi_planeado', 'serving', 'inversión_plataforma', 'inversión_total',
+                             'inversión_AdOps', 'Operativo_AdOps','Serving_AdOps', 'costo_operativo',
+                             'semana','dias_mes', 'dias_semana','kpi_planeado_diario','kpi_planeado_semanal',
+                             'inversion_plataforma_diaria','inversion_plataforma_semanal','inversion_AdOps_diaria','inversion_AdOps_semanal',
+                             'inicio_reporte', 'fin_reporte', 'inicio_campaña_reporte','fin_campaña_reporte', 'divisa',
+                             'dinero_gastado', 'impresiones', 'clics', 'conversiones', 'revenue','llave_analytics',
+                             'conversiones_directas', 'conversiones_asistidas', 'revenue_directo', 'revenue_asistido',
+                             'total_conversiones', 'total_revenue']]
+
+tmp_union.dinero_gastado = round(tmp_union.dinero_gastado)
+
+#Por si queremos analizar la información desde el csv.
+tmp_union.to_csv("/home/carlos/Documentos/3_Adsocial/Marketing/Union_Campañas/base_roas_semanal.csv")
+
+#Validamos el día que agregaremos
+tmp_union.groupby(['inicio_campaña_reporte','versión']).count()
+tmp_union = tmp_union[tmp_union.inicio_campaña_reporte == '2020-05-28']
+
+
+#--¿Donde vivira la información?--#
+#
+#Con ayuda de Escritura_Sheets podemos colocar la información en Google Sheets. (Base master Roas)
+#Se separa la información de Versión Normal y Versión Cliente.
+#Antes de escribir la información revisemos que el numero de Hojas es el Correcto comenzando a contar desde 0.
 
 #Separamos en version normal
 vn_union = tmp_union[~tmp_union.versión.str.contains('VC')]
-
-Escritura_Sheets.Escritura(vn_union , 2, Escribir = 'si', header = True, archivo_sheet = 'Base master Roas')
+Escritura_Sheets.Escritura(vn_union ,
+                           hoja = 3,
+                           Escribir = 'si',
+                           header = False,
+                           archivo_sheet = 'Base Master Roas Hot Sale')
 
 #Separamos en version cliente
 vc_union = tmp_union[tmp_union.versión.str.contains('VC')]
+Escritura_Sheets.Escritura(vc_union ,
+                           hoja = 4,
+                           Escribir = 'si',
+                           header = False,
+                           archivo_sheet = 'Base Master Roas Hot Sale')
 
-Escritura_Sheets.Escritura(vc_union , 3, Escribir = 'si', header = True, archivo_sheet = 'Base master Roas')
 
-###########################
-#Validacion de lo faltante#
-###########################
 
-##############################################
+
+#--CRUZE CON INFORMACION DE GOOGLE ANALYTICS--##
+
+def Formato_numerico(Base, Columna):
+        Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).replace('$',''))
+        Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).replace(',',''))
+        Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).strip())
+        Base.loc[:,Columna] = Base.loc[:,Columna].apply(lambda x : str(x).replace('-','0'))
+        Base.loc[:,Columna] = Base.loc[:,Columna].astype('float')
+        Base.loc[:,Columna] = round(Base.loc[:,Columna],2)
+        return Base.loc[:,Columna]
+
+#Importación de las bases
+semanal = Escritura_Sheets.archivos_finales(sheets = 'Base Master Roas Hot Sale', hoja = 3)
+
+analytics_semanal = Escritura_Sheets.archivos_finales(sheets = 'Base Master Roas Hot Sale', hoja = 2)
+
+#Transformación de los datos de analytics
+analytics_semanal = analytics_semanal[~analytics_semanal.plataforma_abreviacion.str.contains('DSP')] #Dsp ya cuenta con sus conversiones asistidas
+    
+analytics_semanal['revenue'] = Formato_numerico(analytics_semanal, 'revenue')
+analytics_semanal['conversiones'] = Formato_numerico(analytics_semanal, 'conversiones')
+
+analytics_semanal = analytics_semanal.loc[:,['tipo_conversion','llave_analytics','conversiones','revenue']]
+analytics_semanal = analytics_semanal.groupby(['llave_analytics',
+                                               'tipo_conversion'], as_index = False).sum()
+
+analytics_semanal = analytics_semanal.pivot(index = 'llave_analytics',
+                                            columns = 'tipo_conversion')
+
+analytics_semanal.columns = ['conversiones_asistidas',
+                             'conversiones_directas',
+                             'revenue_asistido',
+                             'revenue_directo']
+
+analytics_semanal = analytics_semanal.fillna(0).reset_index()
+
+semanal_DSP = semanal[semanal.plataforma.str.contains('Programmatic')]
+
+#Cruze de la información semanal con analytics Facebook y Google
+#Debo quitar los que no cruzen, bien.
+semanal_FB_GO = semanal[~semanal.plataforma.str.contains('Programmatic')].drop(['conversiones_directas',
+                                                                                          'conversiones_asistidas',
+                                                                                          'revenue_directo',
+                                                                                          'revenue_asistido'], axis = 1).fillna(0)
+
+semanal_FB_GO = pd.merge(semanal_FB_GO, 
+                         analytics_semanal,
+                         how = 'outer',
+                         on = 'llave_analytics')
+
+tmp = semanal_FB_GO.loc[:,['cliente_nomenclatura','llave_ventas',	'llave_unica_mp', 'versión',
+                           'tipo_presupuesto', 'tipo_2', 'comentario', 'Año-Mes', 'mes_plan', 'campaña_nomenclatura',
+                           'plataforma', 'fecha_inicio_plan', 'fecha_fin_plan', 'inicio_campaña',	'fin_campaña',
+                           'costo_planeado', 'kpi_planeado', 'serving', 'inversión_plataforma', 'inversión_total',
+                           'inversión_AdOps', 'Operativo_AdOps','Serving_AdOps', 'costo_operativo',
+                           'semana','dias_mes', 'dias_semana','kpi_planeado_diario','kpi_planeado_semanal',
+                           'inversion_total_diaria','inversion_total_semanal','inversion_AdOps_diaria','inversion_AdOps_semanal',
+                           'inicio_reporte', 'fin_reporte', 'inicio_campaña_reporte','fin_campaña_reporte', 'divisa',
+                           'dinero_gastado', 'impresiones', 'clics', 'conversiones', 'revenue','llave_analytics',
+                           'conversiones_directas', 'conversiones_asistidas', 'revenue_directo', 'revenue_asistido',
+                           'total_conversiones', 'total_revenue']]
+
+semanal_FB_GO = semanal_FB_GO.iloc[:-2]
+                                                            
+semanal_tmp = pd.concat([semanal_DSP, semanal_FB_GO], axis = 0)
+
+semanal_tmp = semanal_tmp.loc[:,['cliente_nomenclatura','llave_ventas', 'llave_unica_mp', 'versión',
+                   'tipo_presupuesto', 'tipo_2', 'comentario', 'Año-Mes', 'mes_plan', 'campaña_nomenclatura',
+                   'plataforma', 'fecha_inicio_plan', 'fecha_fin_plan', 'inicio_campaña',	'fin_campaña',
+                   'costo_planeado', 'kpi_planeado', 'serving', 'inversión_plataforma', 'inversión_total',
+                   'inversión_AdOps', 'Operativo_AdOps','Serving_AdOps', 'costo_operativo',
+                   'semana','dias_mes', 'dias_semana','kpi_planeado_diario','kpi_planeado_semanal',
+                   'inversion_total_diaria','inversion_total_semanal','inversion_AdOps_diaria','inversion_AdOps_semanal',
+                   'inicio_reporte', 'fin_reporte', 'inicio_campaña_reporte','fin_campaña_reporte', 'divisa',
+                   'dinero_gastado', 'impresiones', 'clics', 'conversiones', 'revenue','llave_analytics',
+                   'conversiones_directas', 'conversiones_asistidas', 'revenue_directo', 'revenue_asistido',
+                   'total_conversiones', 'total_revenue']]
+
+Escritura_Sheets.Escritura(semanal_tmp , 3, Escribir = 'si', header = True, archivo_sheet = 'Base Master Roas Hot Sale')
+  
+
+#--¿Toda la información cruzo?--#
+#
+# No, se debe revisar que es lo que no esta cruzando y ¿por que?
+# Las validaciones se realizan por Cliente
+# Se escriben en Sheets (Validaciones Nomenclatura Base Roas)
+# Una ves que se corrija volvemos a correr el código.
+
 #¿Qué debemos revisar sobre la nomenclatura? #
-
 a = tmp_d_2_1.llave_plataformas.str.split("_", 10,expand = True)
 a.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2","plataforma"]
 a['dummy'] = ''
 a['comentario'] = "Los tenemos en plataforma, se tiene que revisar si encuentra mal en el mp"
 a['Nombre_Campaña'] = tmp_d_2_1.llave_plataformas
 
-b = tmp_d_1_1.llave_ventas.str.split("_", 10,expand = True)
-b.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2","plataforma","dummy"]
+b = tmp_d_1_1.llave_ventas.str.split("_", 5,expand = True)
+b.columns = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2","plataforma"]
 b.fillna('')
-b = b.iloc[:,[0,1,2,3,4,5,6]]
+b = b.iloc[:,[0,1,2,3,4,5]]
 b['comentario'] = 'Lo tenemos en el mp, se tiene que revisar si se encuentra mal la nomenclatura en los reportes'
 b['Nombre_Campaña'] = tmp_d_1_1.llave_ventas
 
@@ -261,11 +423,12 @@ THS = tmp_revision.loc[ tmp_revision.Cliente.str.contains('ths', na = False)]
 PETCO = tmp_revision.loc[ tmp_revision.Cliente.str.contains('petco', na = False)]
 GICSA = tmp_revision.loc[ tmp_revision.Cliente.str.contains('gicsa', na = False)]
 GWEP = tmp_revision.loc[ tmp_revision.Cliente.str.contains('gwep', na = False)]
+ACER = tmp_revision.loc[ tmp_revision.Cliente.str.contains('acer', na = False)]
 
 OD.shape[0] + RS.shape[0] + THS.shape[0] + PETCO.shape[0] + GICSA.shape[0] + GWEP.shape[0]
 
 OTROS = tmp_revision.loc[ ~tmp_revision.Cliente.str.contains('od', na = False) & ~tmp_revision.Cliente.str.contains('rs', na = False) & ~tmp_revision.Cliente.str.contains('sodexo', na = False) & ~tmp_revision.Cliente.str.contains('ths', na = False) &
-                  ~tmp_revision.Cliente.str.contains('petco', na = False) & ~tmp_revision.Cliente.str.contains('gicsa', na = False) & ~tmp_revision.Cliente.str.contains('gicsa', na = False) & ~tmp_revision.Cliente.str.contains('gwep', na = False)]
+                  ~tmp_revision.Cliente.str.contains('petco', na = False) & ~tmp_revision.Cliente.str.contains('gicsa', na = False) & ~tmp_revision.Cliente.str.contains('gicsa', na = False) & ~tmp_revision.Cliente.str.contains('gwep', na = False) & ~tmp_revision.Cliente.str.contains('acer', na = False)]
 
 #Escritura de validaciones
 Escritura_Sheets.Escritura(OD, hoja = 0, header = 'si', Escribir = 'si', archivo_sheet = 'Validación Nomenclatura Base Roas')
@@ -274,5 +437,17 @@ Escritura_Sheets.Escritura(THS, hoja = 2, header = 'si', Escribir = 'si', archiv
 Escritura_Sheets.Escritura(PETCO, hoja = 3, header = 'si', Escribir = 'si', archivo_sheet = 'Validación Nomenclatura Base Roas')
 Escritura_Sheets.Escritura(GICSA, hoja = 4, header = 'si', Escribir = 'si', archivo_sheet = 'Validación Nomenclatura Base Roas')
 Escritura_Sheets.Escritura(GWEP, hoja = 5, header = 'si', Escribir = 'si', archivo_sheet = 'Validación Nomenclatura Base Roas')
+Escritura_Sheets.Escritura(ACER, hoja = 6, header = 'si', Escribir = 'si', archivo_sheet = 'Validación Nomenclatura Base Roas')
+Escritura_Sheets.Escritura(OTROS, hoja = 7, header = 'si', Escribir = 'si', archivo_sheet = 'Validación Nomenclatura Base Roas')
 
-Escritura_Sheets.Escritura(OTROS, hoja = 6, header = 'si', Escribir = 'si', archivo_sheet = 'Validación Nomenclatura Base Roas')
+#Hot Sale
+Escritura_Sheets.Escritura(tmp_revision, hoja = 0, header = 'no', Escribir = 'si', archivo_sheet = 'Base Master Roas Hot Sale')
+
+
+
+##### ---- 
+
+a = bien_adform[bien_adform.llave_plataformas.str.contains('2005_od_bionet_ppf_pfm')]
+
+
+

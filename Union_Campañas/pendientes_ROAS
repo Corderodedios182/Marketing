@@ -2,27 +2,10 @@
 #Base master Roas#
 ##################
 
-- Nuevas columnas
- 
-- Nuevo formato
+- Optimización mp_fic unión
 
-- Validaciones
-  1.Validar mp vs base master
+- Optimización plataformas
 
-- Nueva funcionalidad
-  
-  1. Cruzar con la info de analytics
-  2. Probar la llave
+- Actualize y remplaze la información de forma automatico, detectando los faltantes de información.
 
-
- -Casos especiales
-	*rmnt a pmi
-
-
-#Colocar la información mensual en el sheets.
-#Explicación llenado analytics
-#Historico GG, ver que hecho (Terminar gráficas con todas las métricas y preguntar a Clau el sentido de la inversión)
-#Producto terminar jupyter lab hacer merge con lo de dianis
-#Descarga ROAS Febrero ultima semana y Mensual
-#Reporte de GWEP primer día del mes
-
+- Cuidar no borrar info de Analytics por la llave

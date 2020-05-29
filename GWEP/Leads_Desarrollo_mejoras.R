@@ -9,14 +9,16 @@ library(gridExtra) ; library(tidyr) ; library(dplyr) ; library(ggplot2) ; librar
 
 #Tener un archivo acumulado
 
-Leads_Final <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Finales_actuales/Leads_Final_historico.csv', stringsAsFactors = FALSE)
+Leads_Final <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Finales_actuales/Leads_Final_historico.csv', 
+                        stringsAsFactors = FALSE)
 table(Leads_Final$Archivo)
 
 #El nuevo archivo de leads que deseamos agregar, debemos de darle una limpieza y formato adecuado para unirlo al historico.
 #Seleccionaremos el rango de fechas hora de creación que deseamos agregar al historico
 
-archivo = "TEST_AdSocial - 2020-03-05 al 2020-04-02-.csv"
-base <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Finales_actuales/TEST_AdSocial - 2020-03-05 al 2020-04-02-.csv', stringsAsFactors = FALSE, skip = 1)
+archivo = "TEST_AdSocial - 2020-04-01 al 2020-04-30.csv"
+base <- read.csv('/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Finales_actuales/TEST_AdSocial - 2020-04-01 al 2020-04-30.csv',
+                 stringsAsFactors = FALSE, skip = 1)
 
 #Se le da un formato adecuado a la base, para poderla trabajar con las gráficas
 
@@ -293,7 +295,7 @@ Zoho <- function(desarrollo){
 #En los reportes se toma el mes no la fecha de inicio.
 
 #Facebook
-setwd("/home/carlos/Dropbox/Zoho GWEP/Histórico Plataformas/Marzo/Mensual/")
+setwd("/home/carlos/Dropbox/Zoho GWEP/Histórico Plataformas/Abril/")
 
 temp = list.files(pattern="*.csv")
 
@@ -325,13 +327,15 @@ colnames(facebook) <- c("Plataforma","Campaña","Fecha_Inicio","Fecha_Fin","Impr
 
 head(facebook,2)
 
-write.csv(facebook, "/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Marzo/Mensual/Facebook_Marzo.csv")
+write.csv(facebook, "/home/carlos/Documentos/3_Adsocial/GWEP/Campañas/Abril/Mensual/Facebook_Abril.csv")
 
 #Se pega manual la nueva información
-Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final_marzo.csv")
+Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final_abril.csv")
 
 head(Plataformas,2)
 table(Plataformas$Archivo)
+
+desarrollo <- "Cumbres Herradura"
 
 Plataformas_graficas <- function(desarrollo){
   
@@ -474,7 +478,7 @@ Plataformas_graficas <- function(desarrollo){
 
 
 #Ruta donde dejamos los nuevos archivos
-setwd("/home/carlos/Documentos/3_Adsocial/GWEP/Graficas/Por_Desarrollo_Marzo/")
+setwd("/home/carlos/Documentos/3_Adsocial/GWEP/Graficas/Por_Desarrollo_Abril/")
 
 #Tablas resumen integrarlas a las funciones.
 write.csv(data.frame(Zoho("Aurum")[2]),paste0("", "Aurum", "_LeadInterés.csv"), row.names = FALSE)
