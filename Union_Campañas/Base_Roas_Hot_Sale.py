@@ -252,7 +252,7 @@ semanal = Escritura_Sheets.archivos_finales(sheets = 'Base Master Roas Hot Sale'
 semanal.groupby(['inicio_campaña_reporte','versión'], as_index = False).count().loc[:,['inicio_campaña_reporte','versión','ultima_actualizacion']]
 
 #Vemos que día nos hace falta
-tmp_union = tmp_union[tmp_union.inicio_campaña_reporte == '2020-05-28'] 
+tmp_union = tmp_union[tmp_union.inicio_campaña_reporte > '2020-05-28'] 
 
 #Separamos en version normal
 vn_union = tmp_union[~tmp_union.versión.str.contains('VC')]
@@ -260,7 +260,7 @@ Escritura_Sheets.Escritura(vn_union ,
                            hoja = 3,
                            Escribir = 'si',
                            header = True,
-                           archivo_sheet = 'test')
+                           archivo_sheet = 'Base Master Roas Hot Sale')
 
 #Separamos en version cliente
 vc_union = tmp_union[tmp_union.versión.str.contains('VC')]
@@ -268,7 +268,7 @@ Escritura_Sheets.Escritura(vc_union ,
                            hoja = 4,
                            Escribir = 'si',
                            header = True,
-                           archivo_sheet = 'test')
+                           archivo_sheet = 'Base Master Roas Hot Sale')
 
 #--¿Toda la información cruzo?--#
 #
@@ -300,7 +300,7 @@ tmp_revision = tmp_revision.groupby(['Año-Mes', 'Cliente', 'Marca', 'Tipo-1', '
                                      'dummy', 'comentario', 'Nombre_Campaña'], as_index = False).count()
 
 #Hot Sale
-Escritura_Sheets.Escritura(tmp_revision, hoja = 0, header = 'si', Escribir = 'si', archivo_sheet = 'test')
+Escritura_Sheets.Escritura(tmp_revision, hoja = 0, header = 'si', Escribir = 'si', archivo_sheet = 'Base Master Roas Hot Sale')
 
 ###################################################################################
 #--UNION DE LAS BASES DE CONVERSIONES ASISTIDAS/DIRECTAS PARA CRUZAR BASE MASTER--#
@@ -322,7 +322,7 @@ tmp = analytics.groupby(['cliente','Año-Mes','plataforma_abreviacion','inicio_r
 #vemos que información nos hace falta con lo que enemos arriba y la seleccionamos para pegarla
 tmp = analytics.groupby(['inicio_reporte'],as_index = False).count() ; tmp
 
-analytics = analytics[analytics.inicio_reporte == '2020-05-28']
+analytics = analytics[analytics.inicio_reporte > '2020-05-28']
 
 analytics.to_csv("/home/carlos/Documentos/3_Adsocial/Marketing/Analytics/analytics_union.csv")
 
@@ -332,7 +332,7 @@ Escritura_Sheets.Escritura(analytics ,
                            hoja = 2,
                            Escribir = 'si',
                            header = True,
-                           archivo_sheet = 'test')
+                           archivo_sheet = 'Base Master Roas Hot Sale')
 
 print(datetime.now() - startTime)
 
