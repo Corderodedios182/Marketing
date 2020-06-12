@@ -252,7 +252,7 @@ semanal = Escritura_Sheets.archivos_finales(sheets = 'Base Master Roas Hot Sale'
 semanal.groupby(['inicio_campaña_reporte','versión'], as_index = False).count().loc[:,['inicio_campaña_reporte','versión','ultima_actualizacion']]
 
 #Vemos que día nos hace falta
-tmp_union = tmp_union[tmp_union.inicio_campaña_reporte > '2020-05-28'] 
+#tmp_union = tmp_union[tmp_union.inicio_campaña_reporte > '2020-05-31'] 
 
 #Separamos en version normal
 vn_union = tmp_union[~tmp_union.versión.str.contains('VC')]
@@ -322,7 +322,7 @@ tmp = analytics.groupby(['cliente','Año-Mes','plataforma_abreviacion','inicio_r
 #vemos que información nos hace falta con lo que enemos arriba y la seleccionamos para pegarla
 tmp = analytics.groupby(['inicio_reporte'],as_index = False).count() ; tmp
 
-analytics = analytics[analytics.inicio_reporte > '2020-05-28']
+analytics = analytics[analytics.inicio_reporte > '2020-05-31']
 
 analytics.to_csv("/home/carlos/Documentos/3_Adsocial/Marketing/Analytics/analytics_union.csv")
 
@@ -400,7 +400,7 @@ tmp = semanal_FB_GO.loc[:,['cliente_nomenclatura','llave_ventas',	'llave_unica_m
                            'conversiones_directas', 'conversiones_asistidas', 'revenue_directo', 'revenue_asistido',
                            'total_conversiones', 'total_revenue']]
 
-semanal_FB_GO = semanal_FB_GO.iloc[:-2]
+semanal_FB_GO = semanal_FB_GO[semanal_FB_GO.llave_analytics != ""]
                                                             
 semanal_tmp = pd.concat([semanal_DSP, semanal_FB_GO], axis = 0)
 
@@ -416,5 +416,5 @@ semanal_tmp = semanal_tmp.loc[:,['cliente_nomenclatura','llave_ventas', 'llave_u
                    'conversiones_directas', 'conversiones_asistidas', 'revenue_directo', 'revenue_asistido',
                    'total_conversiones', 'total_revenue']]
 
-Escritura_Sheets.Escritura(semanal_tmp , 3, Escribir = 'si', header = True, archivo_sheet = 'Base Master Roas Hot Sale')
+Escritura_Sheets.Escritura(semanal_tmp , 6, Escribir = 'si', header = True, archivo_sheet = 'Base Master Roas Hot Sale')
 

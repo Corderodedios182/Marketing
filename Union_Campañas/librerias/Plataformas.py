@@ -23,7 +23,7 @@ import numpy as np
 #En caso de querer agregar nuevas validaciones a alguna plataforma corremos por línea
 #Y nos traemos los archivos que queremos trabajar
 import glob
-Mes = '2002_Febrero'
+Mes = '2005_Mayo'
 
 Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
 Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
@@ -212,7 +212,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
     Adwords = []
     fallas = []
-    
+
     for csv in Arch_Adwords:
         try:
             tmp = pd.read_csv(csv, delimiter = ',', skiprows = 3, encoding = "latin-1", names = ['Cuenta','Campaña', 'Mes', 'Fecha de inicio', 'Fecha de finalizacion', 'divisa','Costo', 'Impresiones', 'Clics'], header = None)

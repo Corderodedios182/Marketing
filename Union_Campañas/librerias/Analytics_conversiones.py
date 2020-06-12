@@ -18,7 +18,7 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 #Analytics#
 ###########
 #Aquí descargo el nuevo archivo de KPIS
-def archivos_plataformas(mes = 'Enero', tipo_union = 'Mensual'):
+def archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal'):
     if tipo_union == 'Semanal':
         Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.csv')
         Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.xlsx')
@@ -28,11 +28,11 @@ def archivos_plataformas(mes = 'Enero', tipo_union = 'Mensual'):
     return Archivos_csv, Archivos_xlsx
 
 #Hot Sale
-def archivos_plataformas(mes = 'Hot Sale'):
+#def archivos_plataformas(mes = 'Hot Sale'):
     #Hot Sale
-    Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/2005_Mayo/Semanal/Hot Sale/**/*.csv')
-    Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/2005_Mayo/Semanal/Hot Sale/**/*.xlsx')
-    return Archivos_csv, Archivos_xlsx
+#    Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/2005_Mayo/Semanal/Hot Sale/**/*.csv')
+#    Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/2005_Mayo/Semanal/Hot Sale/**/*.xlsx')
+#    return Archivos_csv, Archivos_xlsx
 
 #Funcion que arroja conversiones asistidas y trafico al sitio
 def Analytics(mes = 'Hot Sale'):
