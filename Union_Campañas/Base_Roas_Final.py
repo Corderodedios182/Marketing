@@ -69,8 +69,8 @@ del Arch_MP_FIC, Archivos
 #Función que extraer el nombre de los Archivos que tenemos en las carpetas de los reportes
 def Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal'):
     if tipo_union == 'Semanal':
-        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.csv')
-        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.xlsx')
+        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.csv')
+        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.xlsx')
     else:
         Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.csv')
         Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.xlsx')
@@ -83,35 +83,40 @@ archivos_csv_02, archivos_xlsx_02 = Archivos_Plataformas(mes = '2002_Febrero', t
 archivos_csv_03, archivos_xlsx_03 = Archivos_Plataformas(mes = '2003_Marzo', tipo_union = 'Semanal')
 archivos_csv_04, archivos_xlsx_04 = Archivos_Plataformas(mes = '2004_Abril', tipo_union = 'Semanal')
 archivos_csv_05, archivos_xlsx_05 = Archivos_Plataformas(mes = '2005_Mayo', tipo_union = 'Semanal')
+archivos_csv_06, archivos_xlsx_06 = Archivos_Plataformas(mes = '2006_Junio', tipo_union = 'Semanal')
+archivos_csv_07, archivos_xlsx_07 = Archivos_Plataformas(mes = '2007_Julio', tipo_union = 'Semanal')
 
 #Aplicación de la función Plataformas_tabla, necesita los parametros de archivos.
 plataformas_01 = Plataformas.Plataformas_tabla(archivos_csv_01, archivos_xlsx_01)
 plataformas_02 = Plataformas.Plataformas_tabla(archivos_csv_02, archivos_xlsx_02)
 plataformas_03 = Plataformas.Plataformas_tabla(archivos_csv_03, archivos_xlsx_03)
 plataformas_04 = Plataformas.Plataformas_tabla(archivos_csv_04, archivos_xlsx_04)
-plataformas_05 = Plataformas.Plataformas_tabla(archivos_csv_05, archivos_xlsx_05) #No corre revisar formato de archivo
+plataformas_05 = Plataformas.Plataformas_tabla(archivos_csv_05, archivos_xlsx_05)
+plataformas_06 = Plataformas.Plataformas_tabla(archivos_csv_06, archivos_xlsx_06)
+plataformas_07 = Plataformas.Plataformas_tabla(archivos_csv_07, archivos_xlsx_07)
 
 
 #Validamos que los archivos sean correctos
-tmp = plataformas_03.groupby(['archivo','inicio_reporte']).count()
+tmp = plataformas_07.groupby(['archivo','inicio_reporte']).count()
 
 plataformas_01.plataforma.value_counts()
 plataformas_02.plataforma.value_counts()
 plataformas_03.plataforma.value_counts()
 plataformas_04.plataforma.value_counts()
 plataformas_05.plataforma.value_counts()
+plataformas_06.plataforma.value_counts()
+plataformas_07.plataforma.value_counts()
 
 #Si nuestros Archivos son correctos, procedemos a unir todos los meses
-plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05])
+plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05,plataformas_06, plataformas_07])
 
 #Tengo que tener llave unica, debe cuadrar el número de registros con la plataformas.
 cuadrar = plataformas.groupby(['archivo','llave_plataformas''']).count()
 
 #Podemos borrar lo que no necesitamos para tener nuestras variables de entorno limpias.
-#del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05
-#del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05
-#del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05
-#Arch_MP_FIC, Archivos, plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05
+del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05, plataformas_06, plataformas_07
+del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05, archivos_csv_06, archivos_csv_07
+del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05, archivos_xlsx_06, archivos_xlsx_07
 
 ######################################################################
 #--------CREACION BASE MASTER (UNION KPIS 2020 Y PLATAFORMAS)--------#
@@ -281,19 +286,19 @@ tmp_union.to_csv("/home/carlos/Documentos/3_Adsocial/Marketing/Union_Campañas/b
 #Antes de escribir la información revisemos que el numero de Hojas es el Correcto comenzando a contar desde 0.
 
 #Validamos el día que agregaremos
-semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 1)
+semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 3)
 semanal.groupby(['inicio_campaña_reporte','versión'], as_index = False).count().loc[:,['inicio_campaña_reporte','versión','ultima_actualizacion']]
 
-semanal = Escritura_Sheets.archivos_finales(sheets = 'Base Master Roas', hoja = 2)
+semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 4)
 semanal.groupby(['inicio_campaña_reporte','versión'], as_index = False).count().loc[:,['inicio_campaña_reporte','versión','ultima_actualizacion']]
 
 #Vemos que día nos hace falta
-#tmp_union = tmp_union[tmp_union.inicio_campaña_reporte > '2020-05-31'] 
+tmp_union_a = tmp_union[tmp_union.inicio_campaña_reporte > '2020-06-30']
 
 #Separamos en version normal
 vn_union = tmp_union[~tmp_union.versión.str.contains('VC')]
 Escritura_Sheets.Escritura(vn_union ,
-                           hoja = 1,
+                           hoja = 3,
                            Escribir = 'si',
                            header = True,
                            archivo_sheet = 'Base master Roas')
@@ -301,7 +306,7 @@ Escritura_Sheets.Escritura(vn_union ,
 #Separamos en version cliente
 vc_union = tmp_union[tmp_union.versión.str.contains('VC')]
 Escritura_Sheets.Escritura(vc_union ,
-                           hoja = 2,
+                           hoja = 4,
                            Escribir = 'si',
                            header = True,
                            archivo_sheet = 'Base master Roas')
@@ -365,7 +370,7 @@ Escritura_Sheets.Escritura(OTROS, hoja = 7, header = 'si', Escribir = 'si', arch
 ###################################################################################
 
 #Función que vive en Analytics_conversiones
-analytics = Analytics_conversiones.Analytics(mes = '2005_Mayo')
+analytics = Analytics_conversiones.Analytics(mes = '2007_Julio')
 
 analytics = analytics[(analytics.conversiones != 0) & (analytics.revenue != 0)]
 
@@ -380,14 +385,14 @@ tmp = analytics.groupby(['cliente','Año-Mes','plataforma_abreviacion','inicio_r
 #vemos que información nos hace falta con lo que enemos arriba y la seleccionamos para pegarla
 tmp = analytics.groupby(['inicio_reporte'],as_index = False).count() ; tmp
 
-analytics = analytics[analytics.inicio_reporte > '2020-04-17']
+analytics = analytics[analytics.inicio_reporte > '2020-07-01']
 
 analytics.to_csv("/home/carlos/Documentos/3_Adsocial/Marketing/Analytics/analytics_union.csv")
 
 #Escritura Google Sheets#
 
 Escritura_Sheets.Escritura(analytics ,
-                           hoja = 3,
+                           hoja = 2,
                            Escribir = 'si',
                            header = True,
                            archivo_sheet = 'Base master Roas')
@@ -408,9 +413,9 @@ def Formato_numerico(Base, Columna):
         return Base.loc[:,Columna]
 
 #Importación de las bases
-semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 1)
+semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 3)
 
-analytics_semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 3)
+analytics_semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 2)
 
 #Transformación de los datos de analytics
 analytics_semanal = analytics_semanal[~analytics_semanal.plataforma_abreviacion.str.contains('DSP')] #Dsp ya cuenta con sus conversiones asistidas
@@ -474,5 +479,4 @@ semanal_tmp = semanal_tmp.loc[:,['cliente_nomenclatura','llave_ventas', 'llave_u
                    'conversiones_directas', 'conversiones_asistidas', 'revenue_directo', 'revenue_asistido',
                    'total_conversiones', 'total_revenue']]
 
-Escritura_Sheets.Escritura(semanal_tmp , 1, Escribir = 'si', header = True, archivo_sheet = 'Base master Roas')
-
+Escritura_Sheets.Escritura(semanal_tmp , 3, Escribir = 'si', header = True, archivo_sheet = 'Base master Roas')

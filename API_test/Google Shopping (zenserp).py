@@ -22,14 +22,16 @@ headers = { 'apikey': 'a9ea2c80-9618-11ea-afa7-add3af318161' }
 #Catalogo
 
 params = (
-   ("q","Laptop Gamer Acer Predator Triton 500"),
+   ("q","Laptop MacBook Air Apple Intel Core i5"),
    ("tbm","shop"),
    ("device","desktop"),
    ("gl","MX"),
    ("hl","es-419"),
-   ("location","Coyoacan,Mexico City,Mexico"),
-   ("num","10"),
+   ("location","Mexico"),
+   ("start","10"),
+   ("num","100"),
 )
+
 
 response = requests.get('https://app.zenserp.com/api/v2/search', headers=headers, params=params);
 
@@ -64,7 +66,10 @@ data = data.sort_values(['price',
                          'reviews',
                          'source'], ascending = False)
 
+data.source.value_counts()
 
 # --- Exportación --- #
 
 Escritura_Sheets.Escritura(data , 1, Escribir = 'si', header = True, archivo_sheet = 'Dashboard Competencias')
+
+

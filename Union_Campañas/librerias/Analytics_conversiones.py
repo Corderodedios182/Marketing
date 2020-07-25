@@ -20,8 +20,8 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 #Aquí descargo el nuevo archivo de KPIS
 def archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal'):
     if tipo_union == 'Semanal':
-        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.csv')
-        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Semanal/**/*.xlsx')
+        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.csv')
+        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.xlsx')
     else:
         Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.csv')
         Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.xlsx')

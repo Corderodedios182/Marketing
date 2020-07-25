@@ -23,10 +23,10 @@ import numpy as np
 #En caso de querer agregar nuevas validaciones a alguna plataforma corremos por línea
 #Y nos traemos los archivos que queremos trabajar
 import glob
-Mes = '2005_Mayo'
+Mes = '2004_Abril'
 
-Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.csv')
-Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/Semanal/**/*.xlsx')
+Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/**/*.csv')
+Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/**/*.xlsx')
 
 
 def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
