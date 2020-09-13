@@ -1,10 +1,15 @@
 Leads_Final <- read.csv("/home/carlos/Documentos/3_Adsocial/GWEP/Data/Reporte/Finales_actuales/Leads_Final_historico.csv")
 
-Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final_junio.csv")
+Plataformas <- read.csv("~/Documentos/3_Adsocial/GWEP/Campañas/campañas_final_agosto.csv")
 
 table(Leads_Final$Desarrollo)
 
-desarrollo <- "Aurum"
+desarrollo <- "Cumbres Herradura"
+
+"El Cortijo"
+"Parque Hacienda"
+"Real de Lutecia"
+"Reserva del sur"
 
 #linea 199
 Fuente_clientes <- c("Facebook","Google","Instagram","Langind page","Página web")
@@ -89,7 +94,7 @@ tmp_Go['ym'] <- ymd(tmp_Go$Fecha_Inicio)
 
 Plataformas <- rbind(tmp_Fb,tmp_Go) ; rm(tmp_Fb,tmp_Go)
 table(Plataformas$Desarrollo)
-
+  
 Plataformas <- filter(Plataformas, ym > "2018-12-01" & Desarrollo %in% c("Aurum","Cumbres Herradura","El Cortijo","Parque Hacienda","Real de Lutecia","Reserva del sur"))
 table(Plataformas$Desarrollo)
 

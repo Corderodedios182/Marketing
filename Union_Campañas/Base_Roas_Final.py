@@ -85,6 +85,7 @@ archivos_csv_04, archivos_xlsx_04 = Archivos_Plataformas(mes = '2004_Abril', tip
 archivos_csv_05, archivos_xlsx_05 = Archivos_Plataformas(mes = '2005_Mayo', tipo_union = 'Semanal')
 archivos_csv_06, archivos_xlsx_06 = Archivos_Plataformas(mes = '2006_Junio', tipo_union = 'Semanal')
 archivos_csv_07, archivos_xlsx_07 = Archivos_Plataformas(mes = '2007_Julio', tipo_union = 'Semanal')
+archivos_csv_08, archivos_xlsx_08= Archivos_Plataformas(mes = '2008_Agosto', tipo_union = 'Semanal')
 
 #Aplicación de la función Plataformas_tabla, necesita los parametros de archivos.
 plataformas_01 = Plataformas.Plataformas_tabla(archivos_csv_01, archivos_xlsx_01)
@@ -94,10 +95,11 @@ plataformas_04 = Plataformas.Plataformas_tabla(archivos_csv_04, archivos_xlsx_04
 plataformas_05 = Plataformas.Plataformas_tabla(archivos_csv_05, archivos_xlsx_05)
 plataformas_06 = Plataformas.Plataformas_tabla(archivos_csv_06, archivos_xlsx_06)
 plataformas_07 = Plataformas.Plataformas_tabla(archivos_csv_07, archivos_xlsx_07)
+plataformas_08 = Plataformas.Plataformas_tabla(archivos_csv_08, archivos_xlsx_08)
 
 
 #Validamos que los archivos sean correctos
-tmp = plataformas_07.groupby(['archivo','inicio_reporte']).count()
+tmp = plataformas_08.groupby(['archivo','inicio_reporte']).count()
 
 plataformas_01.plataforma.value_counts()
 plataformas_02.plataforma.value_counts()
@@ -106,17 +108,18 @@ plataformas_04.plataforma.value_counts()
 plataformas_05.plataforma.value_counts()
 plataformas_06.plataforma.value_counts()
 plataformas_07.plataforma.value_counts()
+plataformas_08.plataforma.value_counts()
 
 #Si nuestros Archivos son correctos, procedemos a unir todos los meses
-plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05,plataformas_06, plataformas_07])
+plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05,plataformas_06, plataformas_07, plataformas_08])
 
 #Tengo que tener llave unica, debe cuadrar el número de registros con la plataformas.
 cuadrar = plataformas.groupby(['archivo','llave_plataformas''']).count()
 
 #Podemos borrar lo que no necesitamos para tener nuestras variables de entorno limpias.
-del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05, plataformas_06, plataformas_07
-del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05, archivos_csv_06, archivos_csv_07
-del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05, archivos_xlsx_06, archivos_xlsx_07
+del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05, plataformas_06, plataformas_07, plataformas_08
+del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05, archivos_csv_06, archivos_csv_07, archivos_csv_08
+del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05, archivos_xlsx_06, archivos_xlsx_07, archivos_xlsx_08
 
 ######################################################################
 #--------CREACION BASE MASTER (UNION KPIS 2020 Y PLATAFORMAS)--------#
@@ -293,7 +296,7 @@ semanal = Escritura_Sheets.archivos_finales(sheets = 'Base master Roas', hoja = 
 semanal.groupby(['inicio_campaña_reporte','versión'], as_index = False).count().loc[:,['inicio_campaña_reporte','versión','ultima_actualizacion']]
 
 #Vemos que día nos hace falta
-tmp_union_a = tmp_union[tmp_union.inicio_campaña_reporte > '2020-06-30']
+tmp_union_a = tmp_union[tmp_union.inicio_campaña_reporte > '2020-07-16']
 
 #Separamos en version normal
 vn_union = tmp_union[~tmp_union.versión.str.contains('VC')]
@@ -370,7 +373,7 @@ Escritura_Sheets.Escritura(OTROS, hoja = 7, header = 'si', Escribir = 'si', arch
 ###################################################################################
 
 #Función que vive en Analytics_conversiones
-analytics = Analytics_conversiones.Analytics(mes = '2007_Julio')
+analytics = Analytics_conversiones.Analytics(mes = '2008_Agosto')
 
 analytics = analytics[(analytics.conversiones != 0) & (analytics.revenue != 0)]
 
@@ -385,7 +388,7 @@ tmp = analytics.groupby(['cliente','Año-Mes','plataforma_abreviacion','inicio_r
 #vemos que información nos hace falta con lo que enemos arriba y la seleccionamos para pegarla
 tmp = analytics.groupby(['inicio_reporte'],as_index = False).count() ; tmp
 
-analytics = analytics[analytics.inicio_reporte > '2020-07-01']
+analytics = analytics[analytics.inicio_reporte > '2020-07-31']
 
 analytics.to_csv("/home/carlos/Documentos/3_Adsocial/Marketing/Analytics/analytics_union.csv")
 
