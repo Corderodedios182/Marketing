@@ -86,6 +86,7 @@ archivos_csv_05, archivos_xlsx_05 = Archivos_Plataformas(mes = '2005_Mayo', tipo
 archivos_csv_06, archivos_xlsx_06 = Archivos_Plataformas(mes = '2006_Junio', tipo_union = 'Semanal')
 archivos_csv_07, archivos_xlsx_07 = Archivos_Plataformas(mes = '2007_Julio', tipo_union = 'Semanal')
 archivos_csv_08, archivos_xlsx_08= Archivos_Plataformas(mes = '2008_Agosto', tipo_union = 'Semanal')
+archivos_csv_09, archivos_xlsx_09= Archivos_Plataformas(mes = '2009_Septiembre', tipo_union = 'Semanal')
 
 #Aplicación de la función Plataformas_tabla, necesita los parametros de archivos.
 plataformas_01 = Plataformas.Plataformas_tabla(archivos_csv_01, archivos_xlsx_01)
@@ -96,10 +97,11 @@ plataformas_05 = Plataformas.Plataformas_tabla(archivos_csv_05, archivos_xlsx_05
 plataformas_06 = Plataformas.Plataformas_tabla(archivos_csv_06, archivos_xlsx_06)
 plataformas_07 = Plataformas.Plataformas_tabla(archivos_csv_07, archivos_xlsx_07)
 plataformas_08 = Plataformas.Plataformas_tabla(archivos_csv_08, archivos_xlsx_08)
+plataformas_09 = Plataformas.Plataformas_tabla(archivos_csv_09, archivos_xlsx_09)
 
 
 #Validamos que los archivos sean correctos
-tmp = plataformas_08.groupby(['archivo','inicio_reporte']).count()
+tmp = plataformas_09.groupby(['archivo','inicio_reporte']).count()
 
 plataformas_01.plataforma.value_counts()
 plataformas_02.plataforma.value_counts()
@@ -109,17 +111,18 @@ plataformas_05.plataforma.value_counts()
 plataformas_06.plataforma.value_counts()
 plataformas_07.plataforma.value_counts()
 plataformas_08.plataforma.value_counts()
+plataformas_09.plataforma.value_counts()
 
 #Si nuestros Archivos son correctos, procedemos a unir todos los meses
-plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05,plataformas_06, plataformas_07, plataformas_08])
+plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05,plataformas_06, plataformas_07, plataformas_08, plataformas_09])
 
 #Tengo que tener llave unica, debe cuadrar el número de registros con la plataformas.
 cuadrar = plataformas.groupby(['archivo','llave_plataformas''']).count()
 
 #Podemos borrar lo que no necesitamos para tener nuestras variables de entorno limpias.
-del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05, plataformas_06, plataformas_07, plataformas_08
-del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05, archivos_csv_06, archivos_csv_07, archivos_csv_08
-del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05, archivos_xlsx_06, archivos_xlsx_07, archivos_xlsx_08
+del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05, plataformas_06, plataformas_07, plataformas_08, plataformas_09
+del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05, archivos_csv_06, archivos_csv_07, archivos_csv_08, archivos_csv_09
+del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05, archivos_xlsx_06, archivos_xlsx_07, archivos_xlsx_08, archivos_xlsx_09
 
 ######################################################################
 #--------CREACION BASE MASTER (UNION KPIS 2020 Y PLATAFORMAS)--------#
@@ -373,7 +376,7 @@ Escritura_Sheets.Escritura(OTROS, hoja = 7, header = 'si', Escribir = 'si', arch
 ###################################################################################
 
 #Función que vive en Analytics_conversiones
-analytics = Analytics_conversiones.Analytics(mes = '2008_Agosto')
+analytics = Analytics_conversiones.Analytics(mes = '2009_Septiembre')
 
 analytics = analytics[(analytics.conversiones != 0) & (analytics.revenue != 0)]
 
