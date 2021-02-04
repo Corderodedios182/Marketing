@@ -35,7 +35,7 @@ def Escritura(Base, hoja, header = False, Escribir = 'no', archivo_sheet = 'Vali
     Escribir = Escribir
 
     if Escribir == 'si':
-        os.chdir('/home/carlos/Documentos/3_Adsocial')
+        os.chdir('C:\\Users\\crf005r\\Documents\\3_GitHub\\Marketing\\Union_Campañas\\librerias\\')
         os.listdir()
         #Autentificacion con google cloud platform correo analytics.adsocial@gmail.com
         scope = ["https://spreadsheets.google.com/feeds",'https://www.googleapis.com/auth/spreadsheets',"https://www.googleapis.com/auth/drive.file","https://www.googleapis.com/auth/drive"]
@@ -56,7 +56,7 @@ def Escritura(Base, hoja, header = False, Escribir = 'no', archivo_sheet = 'Vali
 
 #Función para extraer los datos finales.
 
-def archivos_finales(sheets = 'Base master Roas', hoja = 4, api_key_url = '/home/carlos/Documentos/3_Adsocial'):
+def archivos_finales(sheets = 'Base master Roas', hoja = 4, api_key_url = 'C:\\Users\\crf005r\\Documents\\3_GitHub\\Marketing\\Union_Campañas\\librerias\\'):
     
     """ Recuperamos datos finales del google sheets, es necesario tener las credenciales (creds.json) y que el correo se encuentre en el google sheets.
     
@@ -114,16 +114,3 @@ def archivos_finales(sheets = 'Base master Roas', hoja = 4, api_key_url = '/home
 #sh.del_worksheet(sh.worksheets()[2])
             
 #worksheet = sh.add_worksheet(title= "analy", rows="100", cols="20")
-
-
-
-
-
-
-
-
-
-
-
-
-

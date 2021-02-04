@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "office-depot-258416",
+  "private_key_id": "9b4db4039d03020330b17495e379d9f97774c59d",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC2814/K+9o/vZM\nMnitPiqS2IObLvT5RUCfESnelbKGCFkMWs9zhZXBuHxpCjTDlZSs3hYgB8PVy0XF\nY+99cb9I4yUcM5VONrBda0qkhUtiCCvQTpyVLjASSOF5vxIiCmjuN8HZEdERuXzi\njOjvCSofCtOo7ctmpAeeAKnUpgDRqGFJS7ll24KISBygYHqWj6NIsXVWUfoR6MRz\nfUyMGRdHtSSIffSKJikYdm0mba5UNf+pR4dYxOyi9SZlw6z8IWTqYdoinYOJvrKo\nFveJqkYHPfqjzsR7Gg8lXiooFs/u7LimeZqkVLVMU+8SR3dWUjSFrHliw+iwQYho\ngCTOHOnzAgMBAAECggEAGUcQ64uHfatUnnyOvekL+tQdgvB++n3+CrxVW6K1Ut2O\naC2X4i8/3M8/qUe2uJtPOn9I8U4BWeXHExnWui9gLZLsyrO52l+mCJJNcuPT4Yyd\neR+TdO03yR72wFqNB9UGYHultfdHOrq1LZwohvZuMnHNgtawNtNNFiCjVnVFQbJV\nRyE0dVZSQrj0/PCsFvl0IiexKrat1PqvHCTE3rZVcyXZ3ZpmNkWJyguLynzXzcoB\n9HVbIf1dwR8fMunLqs74pTdtWGli+J649ncvUNyJQiMKGWOp0okjkmtFo92ewI+s\nKageT3YqBodXKMJVgFr+ub7/PGbeikt91veD5YOi6QKBgQDb8c7BmAJZi9UfOJUz\nl7cE6YMq46t2yBAfV9NQZc1KjuTQUmNTrcTMpdKkXRuCuiiKfqod0dEXbm1ZXk+5\n0SIrZmJ8bSe1bqv4L6L4ZTLLC/0jBlFmw+lPz7sU8cJ/MWQtoJJ4MPh8y/w+nkql\nDX+83NUIxcoIY71XsUZ7Xm6KZQKBgQDU8RMS7ficDPQknwSrAJymwFPFG2/KryEL\n0uymMKqBVgYoZ9rL0Jkcc9iSeb8fAMTVwfHCF7B3+s2fdEVQP98m2dtGh9ZXj/w1\nKg00/6lDb9ZWD/CuJJMZ/GqCczgcbsGo3l8B5L6XpOptlncPjtZIJGWIqT4132MG\nGOwPWtRxdwKBgFbarmMUvBjQd2DU31Z4WvW9oOaW8Wb+qh82d2QQT3lZ5FG/tymc\nPVLzSLNPcUW2bbwDOPp9mKxAFz5rV+BxDaVF0S6BjGTBR3fCmACvNdeo7FWgcRS7\n2K6DwcULk1rXDlBWUIDWFcpyYzH3IFL9eawDKL1GHfoiKOswPj0JlW1hAoGBAMyB\nvtzWOYa9lhg5tIT6sHghjBJoWEQjT6yIZQjzAj32vTE/FM3bx8CgraV3UYtX9LKK\nckIC+FMyRxrV0t/Qh+NLJaGmQb+UpBb3DPoSc6A1n3bGFlNZAwHY/v3L5F7CLDGf\nZ0VtR3JiS1b2Q+BoQPnGItFOIVYh9XtcohHZHODfAoGADToaQ3w748GCTxu10T5C\nWDzUW1Em8rDZDurbmPlkgo1JoeCRI0bB+rJj/w7fdio928v8243xTt8Sq5J2U+o2\nAQ3hh6TJBUfp/Q5WC3YbSMco0vDeAeGxvAmjOWokXy0PiJRAJS/BKV47MpXXCT+y\nONBTLWpWaPGtz8GiaW89PnI=\n-----END PRIVATE KEY-----\n",
+  "client_email": "diana-131@office-depot-258416.iam.gserviceaccount.com",
+  "client_id": "101513376966100001072",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/diana-131%40office-depot-258416.iam.gserviceaccount.com"
+}

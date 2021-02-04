@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 #Definimos la ruta para poder trabajar con los diferentes Scripts de apoyo
-os.chdir('/home/carlos/Documentos/3_Adsocial/Marketing/Union_Campañas')
+os.chdir('C:\\Users\\crf005r\\Documents\\3_GitHub\\Marketing\\Union_Campañas')
 os.listdir()
 
 from librerias import MP_FIC #Une, limpia el Archivo KPIS_2020
@@ -47,7 +47,7 @@ from librerias import Analytics_conversiones #Conversiones asistidas y Directas 
 #####################################################
 #Aplicando la función MP_FIC_tabla() creada para mejorar la legibilidad del código.
 
-os.chdir('/home/carlos/Dropbox/ROAS 2020')
+os.chdir('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020')
 Archivos = os.listdir()
 
 #-- MP_FIC (KPI) --#
@@ -66,14 +66,20 @@ del Arch_MP_FIC, Archivos
 #
 #Ejemplo: 2001_Enero -> Semanal -> 1:01:2020 al 8:01:2020 (d:mm:yyyy)
 
+glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020')
+
+#
+rutas_archivos = ''
+rutas_paquetes = ''
+
 #Función que extraer el nombre de los Archivos que tenemos en las carpetas de los reportes
 def Archivos_Plataformas(mes = '2001_Enero', tipo_union = 'Semanal'):
     if tipo_union == 'Semanal':
-        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.csv')
-        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.xlsx')
+        Archivos_csv = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020\\' + mes + '\\**\\*.csv')
+        Archivos_xlsx = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020\\' + mes + '\\**\\*.xlsx')
     else:
-        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.csv')
-        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.xlsx')
+        Archivos_csv = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020' + mes + '\\Mensual\\*.csv')
+        Archivos_xlsx = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020' + mes + '\\Mensual\\*.xlsx')
     return Archivos_csv, Archivos_xlsx
 
 #Aplicación de la Función Archivos Plataformas
@@ -85,8 +91,10 @@ archivos_csv_04, archivos_xlsx_04 = Archivos_Plataformas(mes = '2004_Abril', tip
 archivos_csv_05, archivos_xlsx_05 = Archivos_Plataformas(mes = '2005_Mayo', tipo_union = 'Semanal')
 archivos_csv_06, archivos_xlsx_06 = Archivos_Plataformas(mes = '2006_Junio', tipo_union = 'Semanal')
 archivos_csv_07, archivos_xlsx_07 = Archivos_Plataformas(mes = '2007_Julio', tipo_union = 'Semanal')
-archivos_csv_08, archivos_xlsx_08= Archivos_Plataformas(mes = '2008_Agosto', tipo_union = 'Semanal')
-archivos_csv_09, archivos_xlsx_09= Archivos_Plataformas(mes = '2009_Septiembre', tipo_union = 'Semanal')
+archivos_csv_08, archivos_xlsx_08 = Archivos_Plataformas(mes = '2008_Agosto', tipo_union = 'Semanal')
+archivos_csv_09, archivos_xlsx_09 = Archivos_Plataformas(mes = '2009_Septiembre', tipo_union = 'Semanal')
+archivos_csv_10, archivos_xlsx_10 = Archivos_Plataformas(mes = '2010_Octubre', tipo_union = 'Semanal')
+archivos_csv_11, archivos_xlsx_11 = Archivos_Plataformas(mes = '2011_Noviembre', tipo_union = 'Semanal')
 
 #Aplicación de la función Plataformas_tabla, necesita los parametros de archivos.
 plataformas_01 = Plataformas.Plataformas_tabla(archivos_csv_01, archivos_xlsx_01)
@@ -98,7 +106,8 @@ plataformas_06 = Plataformas.Plataformas_tabla(archivos_csv_06, archivos_xlsx_06
 plataformas_07 = Plataformas.Plataformas_tabla(archivos_csv_07, archivos_xlsx_07)
 plataformas_08 = Plataformas.Plataformas_tabla(archivos_csv_08, archivos_xlsx_08)
 plataformas_09 = Plataformas.Plataformas_tabla(archivos_csv_09, archivos_xlsx_09)
-
+plataformas_10 = Plataformas.Plataformas_tabla(archivos_csv_10, archivos_xlsx_10)
+plataformas_11 = Plataformas.Plataformas_tabla(archivos_csv_11, archivos_xlsx_11)
 
 #Validamos que los archivos sean correctos
 tmp = plataformas_09.groupby(['archivo','inicio_reporte']).count()
@@ -112,17 +121,20 @@ plataformas_06.plataforma.value_counts()
 plataformas_07.plataforma.value_counts()
 plataformas_08.plataforma.value_counts()
 plataformas_09.plataforma.value_counts()
+plataformas_10.plataforma.value_counts()
+plataformas_11.plataforma.value_counts()
+plataformas_12.plataforma.value_counts()
 
 #Si nuestros Archivos son correctos, procedemos a unir todos los meses
-plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05,plataformas_06, plataformas_07, plataformas_08, plataformas_09])
+plataformas = pd.concat([plataformas_01,plataformas_02,plataformas_03, plataformas_04, plataformas_05,plataformas_06, plataformas_07, plataformas_08, plataformas_09, plataformas_10, plataformas_11])
 
 #Tengo que tener llave unica, debe cuadrar el número de registros con la plataformas.
 cuadrar = plataformas.groupby(['archivo','llave_plataformas''']).count()
 
 #Podemos borrar lo que no necesitamos para tener nuestras variables de entorno limpias.
-del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05, plataformas_06, plataformas_07, plataformas_08, plataformas_09
-del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05, archivos_csv_06, archivos_csv_07, archivos_csv_08, archivos_csv_09
-del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05, archivos_xlsx_06, archivos_xlsx_07, archivos_xlsx_08, archivos_xlsx_09
+del plataformas_01, plataformas_02, plataformas_03, plataformas_04, plataformas_05, plataformas_06, plataformas_07, plataformas_08, plataformas_09, plataformas_10, plataformas_11, plataformas_12
+del archivos_csv_01, archivos_csv_02, archivos_csv_03, archivos_csv_04, archivos_csv_05, archivos_csv_06, archivos_csv_07, archivos_csv_08, archivos_csv_09, archivos_csv_10, archivos_csv_11, archivos_csv_12 
+del archivos_xlsx_01, archivos_xlsx_02, archivos_xlsx_03, archivos_xlsx_04, archivos_xlsx_05, archivos_xlsx_06, archivos_xlsx_07, archivos_xlsx_08, archivos_xlsx_09, archivos_xlsx_10, archivos_xlsx_11, archivos_xlsx_12
 
 ######################################################################
 #--------CREACION BASE MASTER (UNION KPIS 2020 Y PLATAFORMAS)--------#
@@ -376,22 +388,22 @@ Escritura_Sheets.Escritura(OTROS, hoja = 7, header = 'si', Escribir = 'si', arch
 ###################################################################################
 
 #Función que vive en Analytics_conversiones
-analytics = Analytics_conversiones.Analytics(mes = '2009_Septiembre')
-
+analytics = Analytics_conversiones.Analytics(mes = '2001_Enero')
 analytics = analytics[(analytics.conversiones != 0) & (analytics.revenue != 0)]
-
 analytics = analytics.fillna('')
-
 analytics.inicio_reporte = pd.to_datetime(analytics.inicio_reporte, format = "%Y-%m-%d")
 analytics.fin_reporte = pd.to_datetime(analytics.fin_reporte, format = "%Y-%m-%d")
 
-tmp = analytics.groupby(['cliente','Año-Mes','plataforma_abreviacion','inicio_reporte','fin_reporte','tipo_conversion','fuente_medio','Nombre_Campaña','archivo'],
-                              as_index = False).count()
+analytics_1 = 
+
+
+#tmp = analytics.groupby(['cliente','Año-Mes','plataforma_abreviacion','inicio_reporte','fin_reporte','tipo_conversion','fuente_medio','Nombre_Campaña','archivo'],
+#                              as_index = False).count()
 
 #vemos que información nos hace falta con lo que enemos arriba y la seleccionamos para pegarla
-tmp = analytics.groupby(['inicio_reporte'],as_index = False).count() ; tmp
+#tmp = analytics.groupby(['inicio_reporte'],as_index = False).count() ; tmp
 
-analytics = analytics[analytics.inicio_reporte > '2020-07-31']
+#analytics = analytics[analytics.inicio_reporte > '2020-07-31']
 
 analytics.to_csv("/home/carlos/Documentos/3_Adsocial/Marketing/Analytics/analytics_union.csv")
 

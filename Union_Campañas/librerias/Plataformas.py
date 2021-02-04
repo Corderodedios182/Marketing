@@ -23,10 +23,10 @@ import numpy as np
 #En caso de querer agregar nuevas validaciones a alguna plataforma corremos por línea
 #Y nos traemos los archivos que queremos trabajar
 import glob
-Mes = '2004_Abril'
+Mes = '2005_Mayo'
 
-Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/**/*.csv')
-Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + Mes + '/**/*.xlsx')
+Archivos_csv = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020\\' + Mes + '\\**\\*.csv')
+Archivos_xlsx = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020\\' + Mes + '\\**\\*.xlsx')
 
 
 def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
@@ -99,7 +99,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     
     for csv in Arch_FB:
         
-        tmp = pd.read_csv(csv, parse_dates = ['Inicio'])
+        tmp = pd.read_csv(csv, parse_dates = ['Inicio'], encoding='utf-8')
         tmp['Archivo'] = csv
         Facebook.append(tmp)
     
@@ -127,7 +127,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     #Extracción del nombre para cruzarlo con ventas
     C_Facebook = Facebook.loc[:,'Nombre de la campaña'].str.split("_",10,expand = True).iloc[:,:5] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2"]
     C_Facebook.columns = cols
-    C_Facebook.loc[:,'Año-Mes'] = Facebook.inicio_reporte.apply(lambda x : str(x.year)[:2] + Facebook['Mes'])
+    #C_Facebook.loc[:,'Año-Mes'] = Facebook.inicio_reporte.apply(lambda x : str(x.year)[:2] + Facebook['Mes'])
     C_Facebook = C_Facebook[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
 
     Facebook['llave_plataformas'] = C_Facebook ; del C_Facebook
@@ -201,8 +201,8 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     bien_facebook = pd.concat(bien_facebook)
         
     bien_facebook['inicio_campaña_reporte'] = [fechas_inicio(x,y) for x, y in zip(bien_facebook.inicio_campaña,bien_facebook.inicio_reporte)] #Este es el bueno      
-    bien_facebook['fin_campaña_reporte'] = [fechas_fin(x,y) for x, y in zip(bien_facebook.fin_reporte,bien_facebook.fin_campaña)] #Este es el bueno
-    bien_facebook['dias_actividad_reporte'] = (bien_facebook['fin_campaña_reporte'] - bien_facebook['inicio_campaña_reporte']).dt.days + 1
+    bien_facebook['fin_campaña_reporte'] = 0 #"[fechas_fin(x,y) for x, y in zip(bien_facebook.fin_reporte,bien_facebook.fin_campaña)] #Este es el bueno
+    bien_facebook['dias_actividad_reporte'] = 0# (bien_facebook['fin_campaña_reporte'] - bien_facebook['inicio_campaña_reporte']).dt.days + 1
     
     bien_facebook.archivo.value_counts()
     bien_facebook.inicio_reporte.value_counts()
@@ -274,7 +274,7 @@ def Plataformas_tabla(Archivos_csv, Archivos_xlsx):
     C_Adwords = Adwords.loc[:,'campaña'].str.split("_",10,expand = True).iloc[:,:6] ; cols = ["Año-Mes","Cliente","Marca","Tipo-1","Tipo-2","plataforma"]
     C_Adwords.columns = cols
     C_Adwords.plataforma = C_Adwords.plataforma.fillna('SEM')
-    C_Adwords.loc[:,'Año-Mes'] = Adwords.inicio_reporte.apply(lambda x : str(x.year)[:2] + Adwords['mes'])
+    #C_Adwords.loc[:,'Año-Mes'] = Adwords.inicio_reporte.apply(lambda x : str(x.year)[:2] + Adwords['mes'])
     C_Adwords = C_Adwords[cols].apply(lambda row: '_'.join(row.values.astype(str)), axis=1) ; del cols
     
     Adwords['llave_plataformas'] = C_Adwords ; del C_Adwords

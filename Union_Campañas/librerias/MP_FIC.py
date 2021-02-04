@@ -21,7 +21,7 @@ from librerias import Escritura_Sheets
 #En caso de querer agregar nuevas validaciones a alguna plataforma corremos por línea
 #Y nos traemos los archivos que queremos trabajar
 # Aquí descargo el nuevo archivo de KPIS
-os.chdir('/home/carlos/Dropbox/ROAS 2020')
+os.chdir('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020')
 Archivos = os.listdir()
 
 #-- MP_FIC (KPI) --#

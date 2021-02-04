@@ -18,10 +18,10 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 #Analytics#
 ###########
 #Aquí descargo el nuevo archivo de KPIS
-def archivos_plataformas(mes = '2001_Enero', tipo_union = 'Semanal'):
+def archivos_plataformas(mes = 'Enero', tipo_union = 'Semanal'):
     if tipo_union == 'Semanal':
-        Archivos_csv = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020\\' + mes + '\\**\\*.csv')
-        Archivos_xlsx = glob.glob('C:\\Users\\crf005r\\Documents\\2_Adsocial\\Anual\\ROAS 2020\\ROAS 2020\\' + mes + '\\**\\*.xlsx')
+        Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.csv')
+        Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/**/*.xlsx')
     else:
         Archivos_csv = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.csv')
         Archivos_xlsx = glob.glob('/home/carlos/Dropbox/ROAS 2020/' + mes + '/Mensual/*.xlsx')
@@ -134,8 +134,8 @@ def Analytics(mes = 'Hot Sale'):
     
     list(enumerate(union_trafico.keys()))
     
-    union_trafico = union_trafico.loc[:,['cliente', 'Año.Mes', 'plataforma_abreviacion', 'inicio_reporte', 'fin_reporte', 'Tipo', 'Fuente/Medio', 'Campaña', 'Transacciones', 'Ingresos', 'archivo']]
-    union_trafico.columns = ['cliente', 'Año-Mes', 'plataforma_abreviacion','inicio_reporte', 'fin_reporte', 'tipo_conversion',	'fuente_medio',	'Nombre_Campaña', 'conversiones', 'revenue',	'archivo']
+    union_trafico = union_trafico.loc[:,['cliente', 'Año.Mes', 'plataforma_abreviacion', 'inicio_reporte', 'fin_reporte', 'Tipo', 'Fuente/Medio', 'Campaña', 'llave_analytcis', 'Transacciones', 'Ingresos', 'archivo']]
+    union_trafico.columns = ['cliente', 'Año-Mes', 'plataforma_abreviacion','inicio_reporte', 'fin_reporte', 'tipo_conversion',	'fuente_medio',	'Nombre_Campaña', 'llave_analytcis', 'conversiones', 'revenue',	'archivo']
     
     union_trafico.fuente_medio = union_trafico.fuente_medio.str.lower()
     
