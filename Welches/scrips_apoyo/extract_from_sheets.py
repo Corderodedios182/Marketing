@@ -3,7 +3,7 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import logging
 
-def get_sheets_file(file_name, sheet_name, skip_rows, credentials_file):
+def get_sheets_file(file_name, sheet_name, skip_rows= 0, credentials_file):
     
     scope = ['https://spreadsheets.google.com/feeds',
             'https://www.googleapis.com/auth/spreadsheets',
@@ -22,9 +22,11 @@ def get_sheets_file(file_name, sheet_name, skip_rows, credentials_file):
         logging.error('The following error happend when trying to access the file: {}'.format(e))
         exit(1)
     
-    raw_data = pd.DataFrame(sheet.get_all_records())
+    raw_data = pd.DataFrame(sheet.get_all_values()[skip_rows:])
+    headers = raw_data[0]
+    raw_df = pd.DataFrame(raw_data[1:], columns= headers)
 
-    return sheet
+    return raw_df
 
 
 def main():
