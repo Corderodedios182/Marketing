@@ -70,7 +70,7 @@ def write_to_sheets(client, file_name, sheet_name, input_df):
 
 
 def main():
-    secrets_file = './welches-5291fb1d6517.json'
+    secrets_file = '' #path to secrets file
     ads_file_name = 'Google Ads Plataforma'
     ads_sheet_name = 'Google Ads Plataforma'
     ads_pfm_columns = ['Campaña','Grupo de anuncios','Día','Moneda','Clics','Impresiones','Costo','Video reproducido al 100%']
