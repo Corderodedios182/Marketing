@@ -65,7 +65,7 @@ def write_to_sheets(client, file_name, sheet_name, input_df):
     try:
         set_with_dataframe(sheet, input_df, include_column_header=True, row= current_rows_len + 1)
     except Exception as e:
-        logger.error('The following error happend while trying to write: {}'.format(e))
+        logging.error('The following error happend while trying to write: {}'.format(e))
         exit(1)
 
 
@@ -83,7 +83,7 @@ def main():
     raw_df = get_sheets_file(client, ads_file_name, ads_sheet_name, ads_pfm_skip_rows)
     formatted_df = output_format(raw_df, ads_pfm_columns, ads_pfm_date)
     write_to_sheets(client, ads_pfm_output_file_name, ads_pfm_output_sheet_name, formatted_df)
-    logger.info('Successful execution')
+    logging.info('Successful execution')
 
 if __name__ == '__main__':
     main()
