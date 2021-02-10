@@ -66,11 +66,7 @@ def write_to_sheets(client, file_name, sheet_name, input_df):
         updated_df = current_df.append(input_df, sort= True)
         set_with_dataframe(sheet, updated_df, include_column_header= True)
     except Exception as e:
-<<<<<<< HEAD
         logging.exception('The following error happend while trying to write: ')
-=======
-        logging.error('The following error happend while trying to write: {}'.format(e))
->>>>>>> 83be2da088eec8b8040b5c41572ae4ae13ee4e2f
         exit(1)
 
 def master_format(input_df, column_names, source):
@@ -145,7 +141,6 @@ def main():
     input_source = 'Google Ads Plataforma'
 
     client = get_auth(secrets_file)
-<<<<<<< HEAD
 
     raw_df = get_sheets_file(client, 
                              config_values[input_source]['file_name'], 
@@ -170,11 +165,6 @@ def main():
                     output_sheet_name, 
                     master_df)
 
-=======
-    raw_df = get_sheets_file(client, ads_file_name, ads_sheet_name, ads_pfm_skip_rows)
-    formatted_df = output_format(raw_df, ads_pfm_columns, ads_pfm_date)
-    write_to_sheets(client, ads_pfm_output_file_name, ads_pfm_output_sheet_name, formatted_df)
->>>>>>> 83be2da088eec8b8040b5c41572ae4ae13ee4e2f
     logging.info('Successful execution')
 
 if __name__ == '__main__':
