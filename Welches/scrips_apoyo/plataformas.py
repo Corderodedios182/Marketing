@@ -3,6 +3,11 @@
 Created on Sat Feb  6 20:06:54 2021
 
 @author: crf005r
+#Mejoras: 
+    - Importar los datos directo de Sheets
+    - Limpiar y estructurar codigo repetitivo
+    - Crear Validador (Lo que no cruza, Las que al abrir nomenclatura no encajan, Diagram de Ven Euler con los cruzes)
+    - Exportar Archivo de Validaciones
 """
 import os
 import pandas as pd
@@ -10,6 +15,40 @@ from datetime import datetime
 
 os.chdir('C:/Users/crf005r/Documents/6_datasense')
 os.listdir()
+
+#--Facebook--#
+
+facebook = pd.read_excel('Facebook.xlsx', sheet_name = 'Raw Data Report')
+facebook = facebook.iloc[1:].loc[:,["Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"]]
+facebook.columns = ["plataforma", "campaña", "grupo_de_anuncios", "anuncio", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"]
+facebook.fecha = pd.to_datetime(facebook.fecha, format = "%Y/%m/%d")
+facebook.fecha = facebook.fecha.apply(lambda x : x.strftime('%Y-%m-%d'))
+facebook.loc[(facebook['plataforma'].str.contains('audience_network')) | (facebook['plataforma'].str.contains('messenger')) , 'plataforma'] = 'facebook'
+facebook = facebook.groupby(['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio', 'fecha','moneda'], as_index = False).sum()
+facebook["llave_facebook"] = facebook.campaña + "-" + facebook.anuncio + "-" + facebook.fecha
+facebook["llave_facebook_tmp"] = facebook.campaña + "-" + facebook.anuncio + "-" + facebook.fecha + "-" + facebook.plataforma
+
+#Parte donde calculamos el porcentaje de dinero gastado de una campaña para Instagram y Facebook
+tmp = facebook[facebook.llave_facebook.str.contains('ECOM-FB-DPA_PROSPECTING-AON-010520-310520-TR-TRANSACCION_ONLINE-DPA-PROSPECTING-DINAMICO-COSMETICOS-2020-11-01')]
+tmp = facebook.groupby(['llave_facebook_tmp','llave_facebook']).agg({'dinero_gastado': 'sum'})
+tmp = tmp.groupby(level=1).apply(lambda x: 100 * x / float(x.sum()))
+tmp.columns = ['porcentaje_dinero_gastado']
+tmp_2 = pd.merge(facebook, tmp, how = 'outer', on = 'llave_facebook_tmp')
+
+facebook = tmp_2.loc[:,['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio','fecha','moneda', 'clics', 'impresiones', 'dinero_gastado', 'porcentaje_dinero_gastado', 'views','interacciones', 'alcance', 'llave_facebook']]
+ 
+#--Google Ads--#
+
+google_ads = pd.read_csv('Google Ads Plataforma.csv', skiprows = 2, encoding = "latin-1")
+google_ads["Plataforma"] = 'Google Ads'
+google_ads["porcentaje_dinero_gastado"] = 1
+google_ads = google_ads.loc[:, ["Plataforma","Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "porcentaje_dinero_gastado", "Vistas"]]
+google_ads.columns = ["plataforma", "campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","porcentaje_dinero_gastado","views"]
+google_ads.fecha = pd.to_datetime(google_ads.fecha, format = "%d/%m/%Y")
+google_ads.fecha = google_ads.fecha.apply(lambda x : x.strftime('%Y-%m-%d'))
+google_ads["llave_google"] = google_ads.campaña + "-" + google_ads.grupo_de_anuncios + "-" + google_ads.fecha
+
+#--Analytics--#
 
 analytics = pd.read_excel('Google Analytics.xlsx', sheet_name = 'Conjunto de datos1')
 analytics = analytics.reindex(columns = ['Campaña', 'Google Ads: grupo de anuncios', 'Contenido del anuncio', 'Fecha', 'Ingresos', 'Duración de la sesión', 'Sesiones', 'Usuarios', 'Usuarios nuevos', 'Rebotes','Número de visitas a páginas'])
@@ -22,32 +61,7 @@ analytics["llave_facebook"] =  analytics.campaña + "-" + analytics.anuncio + "-
 analytics["llave_google"] =  analytics.campaña + "-" + analytics.grupo_de_anuncios + "-" + analytics.fecha
 analytics = analytics.loc[:,["llave_facebook","llave_google","ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"]]
 
-facebook = pd.read_excel('Facebook.xlsx', sheet_name = 'Raw Data Report')
-facebook = facebook.iloc[1:].loc[:,["Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"]]
-facebook.columns = ["plataforma", "campaña", "grupo_de_anuncios", "anuncio", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"]
-facebook.fecha = pd.to_datetime(facebook.fecha, format = "%Y/%m/%d")
-facebook.fecha = facebook.fecha.apply(lambda x : x.strftime('%Y-%m-%d'))
-facebook.loc[(facebook['plataforma'].str.contains('audience_network')) | (facebook['plataforma'].str.contains('messenger')) , 'plataforma'] = 'facebook'
-facebook = facebook.groupby(['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio', 'fecha','moneda'], as_index = False).sum()
-facebook["llave_facebook"] = facebook.campaña + "-" + facebook.anuncio + "-" + facebook.fecha
-facebook["llave_facebook_tmp"] = facebook.campaña + "-" + facebook.anuncio + "-" + facebook.fecha + "-" + facebook.plataforma
-
-tmp = facebook[facebook.llave_facebook.str.contains('ECOM-FB-DPA_PROSPECTING-AON-010520-310520-TR-TRANSACCION_ONLINE-DPA-PROSPECTING-DINAMICO-COSMETICOS-2020-11-01')]
-tmp = facebook.groupby(['llave_facebook_tmp','llave_facebook']).agg({'dinero_gastado': 'sum'})
-tmp = tmp.groupby(level=1).apply(lambda x: 100 * x / float(x.sum()))
-tmp.columns = ['porcentaje_dinero_gastado']
-
-tmp_2 = pd.merge(facebook, tmp, how = 'outer', on = 'llave_facebook_tmp')
-facebook = tmp_2.loc[:,['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio','fecha','moneda', 'clics', 'impresiones', 'dinero_gastado', 'porcentaje_dinero_gastado', 'views','interacciones', 'alcance', 'llave_facebook']]
-
-google_ads = pd.read_csv('Google Ads Plataforma.csv', skiprows = 2, encoding = "latin-1")
-google_ads["Plataforma"] = 'Google Ads'
-google_ads["porcentaje_dinero_gastado"] = 1
-google_ads = google_ads.loc[:, ["Plataforma","Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "porcentaje_dinero_gastado", "Vistas"]]
-google_ads.columns = ["plataforma", "campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","porcentaje_dinero_gastado","views"]
-google_ads.fecha = pd.to_datetime(google_ads.fecha, format = "%d/%m/%Y")
-google_ads.fecha = google_ads.fecha.apply(lambda x : x.strftime('%Y-%m-%d'))
-google_ads["llave_google"] = google_ads.campaña + "-" + google_ads.grupo_de_anuncios + "-" + google_ads.fecha
+#--Cruzes de Informacion Faceboo, Google con Analytics--#
 
 tmp_1 = pd.merge(facebook, analytics, how = 'outer', left_on = "llave_facebook", right_on = "llave_facebook")
 tmp_1 = tmp_1.fillna(0)
@@ -69,7 +83,7 @@ result.dinero_gastado = result.dinero_gastado.apply(lambda x : str(x).replace(',
 result.porcentaje_dinero_gastado = result.porcentaje_dinero_gastado.apply(lambda x : str(x).replace(',','')).astype('float')
 result.views = result.views.apply(lambda x : str(x).replace(',','')).astype('float')
 
-#Distribuir las metricas de Analytics para Facebook
+#Distribuir las metricas de Analytics de acuerdo al porcentaje de dinero Gastado, sobre todo para Facebook que tiene campañas de Instagram y Facebook
 result.ingresos = (result.porcentaje_dinero_gastado/100) * result.ingresos
 result.duracion_sesion = (result.porcentaje_dinero_gastado/100) * result.duracion_sesion
 result.sesiones = (result.porcentaje_dinero_gastado/100) * result.sesiones
