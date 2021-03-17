@@ -42,8 +42,8 @@ facebook = tmp_2.loc[:,['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio'
 
 google_ads = pd.read_csv('Google Ads Plataforma.csv', skiprows = 2, encoding = "latin-1")
 google_ads["Plataforma"] = 'Google Ads'
-google_ads = google_ads.loc[:, ["Plataforma","Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "Vistas"]]
 google_ads["porcentaje_dinero_gastado"] = 1
+google_ads = google_ads.loc[:, ["Plataforma","Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "porcentaje_dinero_gastado", "Vistas"]]
 google_ads.columns = ["plataforma", "campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","porcentaje_dinero_gastado","views"]
 google_ads.fecha = pd.to_datetime(google_ads.fecha, format = "%d/%m/%Y")
 google_ads.fecha = google_ads.fecha.apply(lambda x : x.strftime('%Y-%m-%d'))
