@@ -22,7 +22,7 @@ os.listdir()
 #--Lectura de archivos--#
 facebook = pd.read_excel('Facebook.xlsx', sheet_name = 'Raw Data Report', skiprows=1,names=['Nombre de la campaña', 'Nombre del conjunto de anuncios','Nombre del anuncio', 'Plataforma', 'Día', 'Impresiones', 'Divisa','Importe gastado (MXN)', 'Alcance', 'Clics en el enlace','Reproducciones de video hasta el 100%','Interacción con una publicación', 'Inicio del informe','Fin del informe'])
 google_ads = pd.read_csv('Google Ads Plataforma.csv', skiprows = 2, encoding = "latin-1")
-analytics = pd.read_excel('Google Analytics.xlsx', sheet_name = 'Conjunto de datos1')
+analytics = pd.read_excel('Google Analytics.xlsx', sheet_name = 'Conjunto de datos1',names=["campaña", "anuncio", "grupo_de_anuncios", "fecha", "sesiones", "usuarios", "usuarios_nuevos","rebotes", "transacciones","ingresos", "duracion_sesion","paginas_vistas"])
 
 #--Seleccion y renombrado de columnas--#
 facebook = facebook.loc[:,["Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"]]
@@ -31,8 +31,7 @@ facebook.columns = ["plataforma", "campaña", "grupo_de_anuncios", "anuncio", "f
 google_ads = google_ads.loc[:, ["Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "Vistas"]]
 google_ads.columns = ["campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views"]
 
-analytics = analytics.reindex(columns = ['Campaña', 'Google Ads: grupo de anuncios', 'Contenido del anuncio', 'Fecha', 'Ingresos', 'Duración de la sesión', 'Sesiones', 'Usuarios', 'Usuarios nuevos', 'Rebotes','Número de visitas a páginas'])
-analytics = analytics.loc[:,['Campaña', 'Google Ads: grupo de anuncios', 'Contenido del anuncio', 'Fecha', 'Ingresos', 'Duración de la sesión', 'Sesiones', 'Usuarios', 'Usuarios nuevos', 'Rebotes','Número de visitas a páginas']]
+analytics = analytics.loc[:,["campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"]]
 analytics.columns = ["campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"]
 
 #--Formato de Columnas--#
@@ -75,16 +74,12 @@ analytics.anuncio = analytics.anuncio.apply(lambda x: str(x).replace("(not set)"
 analytics = analytics.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"], as_index = False).sum()
 
 #--Cruzes de Informacion Facebook, Google con Analytics--#
-
-#Facebook con Analytics
-
-#--Toda la información--#
-
 tmp_f = pd.merge(result[result.plataforma != 'google ads'], analytics, how = 'left', on = ['campaña','anuncio','fecha'])
-
 tmp_a = pd.merge(result[result.plataforma == 'google ads'], analytics, how = 'left', on = ['campaña','grupo_de_anuncios','fecha'])
 
-tmp ['comentario'] = ""
+#--Validaciones--#
+
+tmp['comentario'] = ""
 
 #-Generamos 2 casos para ver la calidad de informacion
 #Caso 1 queremos campañas que tengan algo en dinero gastado e ingresos
