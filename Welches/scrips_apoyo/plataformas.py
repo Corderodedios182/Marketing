@@ -22,6 +22,7 @@ os.listdir()
 #--Lectura de archivos--#
 facebook = pd.read_excel('Facebook.xlsx', sheet_name = 'Raw Data Report', skiprows=1,names=['Nombre de la campaña', 'Nombre del conjunto de anuncios','Nombre del anuncio', 'Plataforma', 'Día', 'Impresiones', 'Divisa','Importe gastado (MXN)', 'Alcance', 'Clics en el enlace','Reproducciones de video hasta el 100%','Interacción con una publicación', 'Inicio del informe','Fin del informe'])
 google_ads = pd.read_csv('Google Ads Plataforma.csv', skiprows = 2, encoding = "latin-1")
+analytics = pd.read_excel('Google Analytics.xlsx', sheet_name = 'Conjunto de datos1')
 
 #--Seleccion y renombrado de columnas--#
 facebook = facebook.loc[:,["Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"]]
@@ -30,6 +31,9 @@ facebook.columns = ["plataforma", "campaña", "grupo_de_anuncios", "anuncio", "f
 google_ads = google_ads.loc[:, ["Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "Vistas"]]
 google_ads.columns = ["campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views"]
 
+analytics = analytics.reindex(columns = ['Campaña', 'Google Ads: grupo de anuncios', 'Contenido del anuncio', 'Fecha', 'Ingresos', 'Duración de la sesión', 'Sesiones', 'Usuarios', 'Usuarios nuevos', 'Rebotes','Número de visitas a páginas'])
+analytics = analytics.loc[:,['Campaña', 'Google Ads: grupo de anuncios', 'Contenido del anuncio', 'Fecha', 'Ingresos', 'Duración de la sesión', 'Sesiones', 'Usuarios', 'Usuarios nuevos', 'Rebotes','Número de visitas a páginas']]
+analytics.columns = ["campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"]
 
 #--Formato de Columnas--#
 #Fechas
@@ -38,6 +42,9 @@ facebook.fecha = facebook.fecha.apply(lambda x : x.strftime('%Y-%m-%d'))
 
 google_ads.fecha = pd.to_datetime(google_ads.fecha, format = "%d/%m/%Y")
 google_ads.fecha = google_ads.fecha.apply(lambda x : x.strftime('%Y-%m-%d'))
+
+analytics.fecha = analytics.fecha.astype(str)
+analytics.fecha = analytics.fecha.apply(lambda x : datetime.strptime(x, '%Y%m%d').strftime('%Y-%m-%d'))
 
 #Numericas
 result = pd.concat([facebook, google_ads])
@@ -61,27 +68,22 @@ a = result.groupby(["plataforma","campaña","grupo_de_anuncios","anuncio","fecha
 a = a.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"]).apply(lambda x: x / float(x.sum())).reset_index().rename(columns = {"dinero_gastado":"porcentaje_dinero_gastado"})
 result = pd.merge(result, a, on = ["plataforma","campaña","grupo_de_anuncios","anuncio","fecha"])
 
-#--Analytics--#
-
-analytics = pd.read_excel('Google Analytics.xlsx', sheet_name = 'Conjunto de datos1')
-analytics = analytics.reindex(columns = ['Campaña', 'Google Ads: grupo de anuncios', 'Contenido del anuncio', 'Fecha', 'Ingresos', 'Duración de la sesión', 'Sesiones', 'Usuarios', 'Usuarios nuevos', 'Rebotes','Número de visitas a páginas'])
-analytics.columns = ["campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"]
-analytics.fecha = analytics.fecha.astype(str)
-analytics.fecha = analytics.fecha.apply(lambda x : datetime.strptime(x, '%Y%m%d').strftime('%Y-%m-%d'))
+analytics = analytics.fillna('')
 analytics.campaña = analytics.campaña.apply(lambda x: str(x).replace("(not set)",""))
 analytics.grupo_de_anuncios = analytics.grupo_de_anuncios.apply(lambda x: str(x).replace("(not set)",""))
 analytics.anuncio = analytics.anuncio.apply(lambda x: str(x).replace("(not set)",""))
-
-analytics["llave_facebook"] =  analytics.campaña + "-" + analytics.anuncio + "-" + analytics.fecha
-analytics["llave_google"] =  analytics.campaña + "-" + analytics.grupo_de_anuncios + "-" + analytics.fecha
-analytics = analytics.loc[:,["llave_facebook","llave_google","ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"]]
+analytics = analytics.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"], as_index = False).sum()
 
 #--Cruzes de Informacion Facebook, Google con Analytics--#
 
 #Facebook con Analytics
 
 #--Toda la información--#
-tmp = pd.merge(facebook, analytics, how = 'outer', on = ['campaña','anuncio','fecha'])
+
+tmp_f = pd.merge(result[result.plataforma != 'google ads'], analytics, how = 'left', on = ['campaña','anuncio','fecha'])
+
+tmp_a = pd.merge(result[result.plataforma == 'google ads'], analytics, how = 'left', on = ['campaña','grupo_de_anuncios','fecha'])
+
 tmp ['comentario'] = ""
 
 #-Generamos 2 casos para ver la calidad de informacion
