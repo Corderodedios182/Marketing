@@ -18,7 +18,6 @@ pd.options.mode.chained_assignment = None
 os.chdir('C:/Users/crf005r/Documents/6_datasense')
 os.listdir()
 
-
 #--Lectura de archivos--#
 facebook = pd.read_excel('Facebook.xlsx', sheet_name = 'Raw Data Report', skiprows=1,names=['Nombre de la campaña', 'Nombre del conjunto de anuncios','Nombre del anuncio', 'Plataforma', 'Día', 'Impresiones', 'Divisa','Importe gastado (MXN)', 'Alcance', 'Clics en el enlace','Reproducciones de video hasta el 100%','Interacción con una publicación', 'Inicio del informe','Fin del informe'])
 google_ads = pd.read_csv('Google Ads Plataforma.csv', skiprows = 2, encoding = "latin-1")
@@ -57,29 +56,86 @@ result.alcance = result.alcance.apply(lambda x : str(x).replace(',','')).astype(
 result = result.fillna(0)
 
 #--Transformaciones--#
-#Etiquetado de datos, agrupaciones, campos calculados especiales
+def master_format(result, analytics):
+    
+    """Etiquetado de datos, agrupaciones, campos calculados especiales"""    
+    
+    result.loc[(result['plataforma'].str.contains('audience_network')) | (result['plataforma'].str.contains('messenger')) , 'plataforma'] = 'facebook'
+    result.loc[result['plataforma'] == 0, 'plataforma'] = 'google ads'
+    result = result.groupby(['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio', 'fecha','moneda'], as_index = False).sum()
 
-result.loc[(result['plataforma'].str.contains('audience_network')) | (result['plataforma'].str.contains('messenger')) , 'plataforma'] = 'facebook'
-result.loc[result['plataforma'] == 0, 'plataforma'] = 'google ads'
-result = result.groupby(['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio', 'fecha','moneda'], as_index = False).sum()
+    a = result.groupby(["plataforma","campaña","grupo_de_anuncios","anuncio","fecha"]).agg({'dinero_gastado': 'sum'})
+    a = a.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"]).apply(lambda x: x / float(x.sum())).reset_index().rename(columns = {"dinero_gastado":"porcentaje_dinero_gastado"})
+    result = pd.merge(result, a, on = ["plataforma","campaña","grupo_de_anuncios","anuncio","fecha"])
+    
+    analytics = analytics.fillna('')
+    analytics.campaña = analytics.campaña.apply(lambda x: str(x).replace("(not set)",""))
+    analytics.grupo_de_anuncios = analytics.grupo_de_anuncios.apply(lambda x: str(x).replace("(not set)",""))
+    analytics.anuncio = analytics.anuncio.apply(lambda x: str(x).replace("(not set)",""))
+    analytics = analytics.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"], as_index = False).sum()
+    
+    #--Cruzes de Informacion Facebook, Google con Analytics--#
+    tmp_f = pd.merge(result[result.plataforma != 'google ads'], analytics, how = 'left', on = ['campaña','anuncio','fecha'])
+    tmp_f = tmp_f.fillna(0)
+    tmp_f = tmp_f.loc[:,['plataforma', 'campaña', 'grupo_de_anuncios_x', 'anuncio', 'fecha','moneda', 'clics', 'impresiones', 'dinero_gastado', 'views','interacciones', 'alcance', 'porcentaje_dinero_gastado','ingresos', 'duracion_sesion', 'sesiones','usuarios', 'usuarios_nuevos','rebotes', 'paginas_vistas']]
+    tmp_f.columns = ['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio', 'fecha','moneda', 'clics', 'impresiones', 'dinero_gastado', 'views','interacciones', 'alcance', 'porcentaje_dinero_gastado','ingresos', 'duracion_sesion', 'sesiones','usuarios', 'usuarios_nuevos','rebotes', 'paginas_vistas']
+    
+    #Tenemos duplicados por los de analytics, se debe agrupar solo por campaña y grupo de anuncios
+    analytics.anuncio = ''
+    analytics = analytics.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"], as_index = False).sum()
+    
+    tmp_a = pd.merge(result[result.plataforma == 'google ads'], analytics, how = 'left', on = ['campaña','grupo_de_anuncios','fecha'])
+    tmp_a = tmp_a.fillna(0)
+    tmp_a = tmp_a.loc[:,['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio_y', 'fecha',
+                         'moneda', 'clics', 'impresiones', 'dinero_gastado', 'views',
+                         'interacciones', 'alcance', 'porcentaje_dinero_gastado',
+                         'ingresos', 'duracion_sesion', 'sesiones', 'usuarios',
+                         'usuarios_nuevos', 'rebotes', 'paginas_vistas']]
+    tmp_a.columns = ['plataforma', 'campaña', 'grupo_de_anuncios', 'anuncio', 'fecha',
+                     'moneda', 'clics', 'impresiones', 'dinero_gastado', 'views',
+                     'interacciones', 'alcance', 'porcentaje_dinero_gastado',
+                     'ingresos', 'duracion_sesion', 'sesiones', 'usuarios',
+                     'usuarios_nuevos', 'rebotes', 'paginas_vistas']
+    
+    base_master = pd.concat([tmp_f, tmp_a])
+    
+    #Distribuir las metricas de Analytics de acuerdo al porcentaje de dinero Gastado, sobre todo para Facebook que tiene campañas de Instagram y Facebook
+    base_master["ingresos_validacion"] = base_master.ingresos
+    base_master.ingresos = (base_master.porcentaje_dinero_gastado) * base_master.ingresos
+    base_master.duracion_sesion = (base_master.porcentaje_dinero_gastado) * base_master.duracion_sesion
+    base_master.sesiones = (base_master.porcentaje_dinero_gastado) * base_master.sesiones
+    base_master.usuarios = (base_master.porcentaje_dinero_gastado) * base_master.usuarios
+    base_master.usuarios_nuevos = (base_master.porcentaje_dinero_gastado) * base_master.usuarios_nuevos
+    base_master.rebotes = (base_master.porcentaje_dinero_gastado) * base_master.rebotes
+    base_master.paginas_vistas = (base_master.porcentaje_dinero_gastado) * base_master.paginas_vistas
+    
+    #Abriendo la Nomenclatura
+    tmp_1 = base_master.loc[:,'campaña'].str.split("-",20,expand = True)
+    cols = ["unidad_de_negocio", "plataforma", "campaña", "subcampaña","fecha_inicio","fecha_fin","estrategia","objetivo","concatenar","concatenar","concatenar","concatenar","concatenar"]
+    tmp_1.columns = cols
+    
+    tmp_2 = base_master.loc[:,'grupo_de_anuncios'].str.split("-",20,expand = True)
+    cols = ["tipo_de_formato", "provedor_de_medio", "tipo_audiencia", "nombre_audiencia","concatenar"]
+    tmp_2.columns = cols
+    
+    tmp_3 = base_master.loc[:,'anuncio'].str.split("-",20,expand = True)
+    cols = ["tipo_audiencia", "nombre_audiencia", "formato", "creativo", "dimension"]
+    tmp_3.columns = cols
+    
+    base_master = pd.concat([tmp_1,tmp_2,tmp_3,base_master], axis = 1)
+    
+    return base_master
 
-a = result.groupby(["plataforma","campaña","grupo_de_anuncios","anuncio","fecha"]).agg({'dinero_gastado': 'sum'})
-a = a.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"]).apply(lambda x: x / float(x.sum())).reset_index().rename(columns = {"dinero_gastado":"porcentaje_dinero_gastado"})
-result = pd.merge(result, a, on = ["plataforma","campaña","grupo_de_anuncios","anuncio","fecha"])
+base_master = master_format(result, analytics)
 
-analytics = analytics.fillna('')
-analytics.campaña = analytics.campaña.apply(lambda x: str(x).replace("(not set)",""))
-analytics.grupo_de_anuncios = analytics.grupo_de_anuncios.apply(lambda x: str(x).replace("(not set)",""))
-analytics.anuncio = analytics.anuncio.apply(lambda x: str(x).replace("(not set)",""))
-analytics = analytics.groupby(["campaña","grupo_de_anuncios","anuncio","fecha"], as_index = False).sum()
+base_master.to_csv('master_2_python.csv')
 
-#--Cruzes de Informacion Facebook, Google con Analytics--#
-tmp_f = pd.merge(result[result.plataforma != 'google ads'], analytics, how = 'left', on = ['campaña','anuncio','fecha'])
-tmp_a = pd.merge(result[result.plataforma == 'google ads'], analytics, how = 'left', on = ['campaña','grupo_de_anuncios','fecha'])
+
+
 
 #--Validaciones--#
-
-tmp['comentario'] = ""
+tmp = google_ads[(google_ads.campaña.str.contains("ECOM-GA-BRAND TERM_EXACTA-AON-160720-311220-TR-TRANSACCION_ONLINE")) & (google_ads.grupo_de_anuncios.str.contains("SEARCH-GOOGLE-COMBINADO-1ST_&_IN_MARKET_&_AFFINITY_&_SIMILARES"))]
+tmp_1 = analytics[(analytics.campaña.str.contains("ECOM-GA-BRAND TERM_EXACTA-AON-160720-311220-TR-TRANSACCION_ONLINE")) & (analytics.grupo_de_anuncios.str.contains("SEARCH-GOOGLE-COMBINADO-1ST_&_IN_MARKET_&_AFFINITY_&_SIMILARES"))]
 
 #-Generamos 2 casos para ver la calidad de informacion
 #Caso 1 queremos campañas que tengan algo en dinero gastado e ingresos
@@ -173,70 +229,13 @@ validacion = tmp_f.groupby(['llave_facebook', 'plataforma']).count()
 #validacion es correcto ese duplicado por el grupo de anuncio
 tmp_f[tmp_f.llave_facebook.str.contains("COOP-FB-DECORACION_INTEGRAL-YVES_SAINT_LAURENT-201020-021120-AW-ENGAGEMENT-NATIVAS_LAL-COMPRADORES_DE_PERFUMERIA-STORIE-01-1920X1080-2020-11-02")]
 
+
 #--¿Toda la información cruzo?--#
 #
 # No, se debe revisar que es lo que no esta cruzando y ¿por que?
 # Una ves que se corrija volvemos a correr el código.
 #¿Qué debemos revisar sobre la nomenclatura? #
 tmp_revision = pd.concat([tmp_d_2,tmp_d_1_1])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-result = pd.concat([tmp_f, tmp_2])
-result["ingresos_val"] = result.ingresos
-result = result.loc[:,["plataforma", "campaña", "grupo_de_anuncios", "anuncio", "fecha", "moneda", "clics", "impresiones", "dinero_gastado", "porcentaje_dinero_gastado","ingresos", "ingresos_val", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes", "views", "interacciones", "paginas_vistas", "alcance"]]
-result = result.fillna(0)
-
-#Formato numerico
-result.clics = result.clics.apply(lambda x : str(x).replace(',','')).astype('float')
-result.impresiones = result.impresiones.apply(lambda x : str(x).replace(',','')).astype('float')
-result.dinero_gastado = result.dinero_gastado.apply(lambda x : str(x).replace(',','')).astype('float')
-result.porcentaje_dinero_gastado = result.porcentaje_dinero_gastado.apply(lambda x : str(x).replace(',','')).astype('float')
-result.views = result.views.apply(lambda x : str(x).replace(',','')).astype('float')
-
-#Distribuir las metricas de Analytics de acuerdo al porcentaje de dinero Gastado, sobre todo para Facebook que tiene campañas de Instagram y Facebook
-result.ingresos = (result.porcentaje_dinero_gastado/100) * result.ingresos
-result.duracion_sesion = (result.porcentaje_dinero_gastado/100) * result.duracion_sesion
-result.sesiones = (result.porcentaje_dinero_gastado/100) * result.sesiones
-result.usuarios = (result.porcentaje_dinero_gastado/100) * result.usuarios
-result.usuarios_nuevos = (result.porcentaje_dinero_gastado/100) * result.usuarios_nuevos
-result.rebotes = (result.porcentaje_dinero_gastado/100) * result.rebotes
-result.paginas_vistas = (result.porcentaje_dinero_gastado/100) * result.paginas_vistas
-
-#Abriendo la Nomenclatura
-tmp_1 = result.loc[:,'campaña'].str.split("-",20,expand = True)
-cols = ["unidad_de_negocio", "plataforma", "campaña", "subcampaña","fecha_inicio","fecha_fin","estrategia","objetivo","concatenar","concatenar","concatenar","concatenar"]
-tmp_1.columns = cols
-
-tmp_2 = result.loc[:,'grupo_de_anuncios'].str.split("-",20,expand = True)
-cols = ["tipo_de_formato", "provedor_de_medio", "tipo_audiencia", "nombre_audiencia"]
-tmp_2.columns = cols
-
-tmp_3 = result.loc[:,'anuncio'].str.split("-",20,expand = True)
-cols = ["tipo_audiencia", "nombre_audiencia", "formato", "creativo", "dimension"]
-tmp_3.columns = cols
-
-tmp_f = pd.concat([tmp_1,tmp_2,tmp_3,result], axis = 1)
-
-#pruebas para validar cruzes
-#a = google_ads[google_ads.llave_google.str.contains('ECOM-GA-BUEN_FIN_HARDLINE-2020-091120-201120-CO-VIEW_PRODUCT-DISCOVERY-GOOGLE-CUSTOM_INTENT-COMPETENCIA_RETAIL')]
-#b = analytics[analytics.llave_google.str.contains('ECOM-GA-BUEN_FIN_HARDLINE-2020-091120-201120-CO-VIEW_PRODUCT-DISCOVERY-GOOGLE-CUSTOM_INTENT-COMPETENCIA_RETAIL')]
-#c = pd.merge(a, b, how = 'outer', left_on = "llave_google", right_on = "llave_google")
-
-tmp_f.to_csv('master_2_python.csv')
 
 #
 
