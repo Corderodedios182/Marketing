@@ -25,7 +25,12 @@ def get_auth(secrets_file):
 
 
 def get_sheets_file(client, file_name, sheet_name, skip_rows= 0): #, secrets_file):
-    
+
+    # 1. Read sheet file from drive 
+    # 2. Create Pandas dataframe and skip rows
+    # 3. Set the headers
+    # 4. Return pandas dataframe
+
     try:
         spreadsheet = client.open(file_name)
         sheet = spreadsheet.worksheet(sheet_name)
@@ -45,13 +50,26 @@ def get_sheets_file(client, file_name, sheet_name, skip_rows= 0): #, secrets_fil
     return raw_df
 
 
-def output_format(input_df, column_names, to_date):
+def output_format(input_df, column_names, to_date, to_numeric):
+
+    # 1. Convert headers to lower case
+    # 2. Select columns
+    # 3. Format columns to date
+    # 4. Format columns to numeric and fill NA with 0 
+    # 5. Return pandas dataframe
+
     input_df.columns = map(str.lower, input_df.columns)
     formatted_df = input_df.loc[:, column_names]
 
     for column in to_date:
         if column in formatted_df.columns:
-            formatted_df[column] = (pd.to_datetime(formatted_df[column])).dt.strftime('%d/%m/%Y')
+            formatted_df[column] = (pd.to_datetime(formatted_df[column])).dt.strftime('%Y/%m/%d')
+        else:
+            logging.error("The column name '{}' was not found".format(column))
+    
+    for column in to_numeric:
+        if column in formatted_df.columns:
+            formatted_df[column] = (pd.to_numeric(formatted_df[column].str.replace(',', '')).fillna(0))
         else:
             logging.error("The column name '{}' was not found".format(column))
 
@@ -59,6 +77,10 @@ def output_format(input_df, column_names, to_date):
 
 
 def write_to_sheets(client, file_name, sheet_name, input_df):
+
+    # 1. Open the specified google sheet (file_name, sheet_name)
+    # 2. Append input_df to sheet 
+    # 3. Write to google sheet
 
     sheet = client.open(file_name).worksheet(sheet_name)
     try:
@@ -71,22 +93,30 @@ def write_to_sheets(client, file_name, sheet_name, input_df):
 
 def master_format(input_df, column_names, source):
     
+    # 1. Column name mapping definition
+    # 2. Create empty pandas dataframe with standar columns name -> master_df
+    # 3. Column name mappign for input_df
+    # 4. Append values from input_df to master_df
+    # 5. Add column fuente
+    # 6. Return pandas dataframe
+
     columns_map = {
         'fuente': [],
         'campaña': ['nombre de la campaña'],
-        'grupo_de_anuncios': ['grupo de anuncios google ads','grupo de anuncios','nombre del conjunto de anuncios'],
-        'anuncio': ['contenido del anuncio', 'nombre del anuncio'],
-        'fecha': ['fecha ga','día'],
+        'grupo_de_anuncios': ['grupo de anuncios', 'nombre del conjunto de anuncios'],
+        'anuncio': ['nombre del anuncio'],
+        'fecha': ['fecha', 'día'],
         'moneda': ['divisa'],
         'clics': ['clics en el enlace'],
         'impresiones': [],
-        'dinero_gastado': ['ingresos', 'costo', 'inversion'],
-        'duracion_sesion': [],
+        'dinero_gastado': ['importe gastado (mxn)', 'costo', 'ingresos'],
+        'duracion_sesion': ['duración de la sesión'],
         'sesiones': [],
         'usuarios': [],
-        'usuarios_nuevos': [],
+        'usuarios_nuevos': ['usuarios nuevos'],
         'rebotes': [],
-        'views': ['reproducciones de video hasta el 100%', 'video reproducido al 100%']
+        'vistas': ['reproducciones de video hasta el 100%', 'vistas'],
+        'visitas': ['número de visitas a páginas'] 
             }
     
     master_df = pd.DataFrame(columns= columns_map.keys())
@@ -114,31 +144,34 @@ def main():
     config_values = {
         'Analytics': {
             'file_name': 'Analytics',
-            'sheet_name': 'Raw',
-            'columns': ['campaña', 'contenido del anuncio', 'fecha ga', 'ingresos'],
-            'columns_to_date': ['fecha ga'],
+            'sheet_name': 'Raw', 
+            'columns': ['campaña', 'google ads: grupo de anuncios', 'contenido del anuncio', 'fecha', 'ingresos', 'duración de la sesión', 'sesiones', 'usuarios', 'usuarios nuevos', 'rebotes', 'número de visitas a páginas'],
+            'columns_to_date': ['fecha'],
+            'columns_to_numeric': ['ingresos', 'sesiones', 'usuarios', 'usuarios nuevos', 'rebotes', 'número de visitas a páginas'],
             'skip_rows': 0,
             'output_sheet_name': 'analytics'
             },
-        'Google Ads Plataforma': {
+        'Google Ads': {
             'file_name': 'Google Ads Plataforma',
-            'sheet_name': 'Google Ads Plataforma',
-            'columns': ['campaña','grupo de anuncios','día','moneda','clics','impresiones','costo','video reproducido al 100%'],
+            'sheet_name': 'Raw',
+            'columns': ['campaña','grupo de anuncios','día','moneda','clics','impresiones','costo','vistas'],
             'columns_to_date': ['día'],
+            'columns_to_numeric': ['clics', 'impresiones', 'costo', 'vistas'],
             'skip_rows': 2,
-            'output_sheet_name': 'google_ads_pfm'
+            'output_sheet_name': 'google_ads'
             },
         'Facebook': {
             'file_name': 'Facebook',
             'sheet_name': 'Raw',
-            'columns': ['nombre de la campaña', 'nombre del conjunto de anuncios', 'nombre del anuncio', 'día', 'divisa', 'clics en el enlace', 'impresiones', 'inversion'],
+            'columns': ['nombre de la campaña', 'nombre del conjunto de anuncios', 'nombre del anuncio', 'día', 'impresiones', 'divisa', 'importe gastado (mxn)', 'clics en el enlace', 'alcance', 'reproducciones de video hasta el 100%', 'interacción con una publicación'],
             'columns_to_date': ['día'],
+            'columns_to_numeric': ['impresiones', 'importe gastado (mxn)', 'clics en el enlace', 'alcance', 'reproducciones de video hasta el 100%', 'interacción con una publicación'],
             'skip_rows': 0,
             'output_sheet_name': 'facebook'
             }
     }
     
-    input_source = 'Google Ads Plataforma'
+    input_source = 'Google Ads'
 
     client = get_auth(secrets_file)
 
@@ -149,7 +182,8 @@ def main():
 
     formatted_df = output_format(raw_df, 
                                  config_values[input_source]['columns'], 
-                                 config_values[input_source]['columns_to_date'])
+                                 config_values[input_source]['columns_to_date'],
+                                 config_values[input_source]['columns_to_numeric'])
 
     write_to_sheets(client, 
                     output_file_name, 
