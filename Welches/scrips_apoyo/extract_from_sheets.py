@@ -44,11 +44,11 @@ def get_sheets_file(client, file_name, sheet_name, skip_rows= 0): #, secrets_fil
     headers = raw_data.iloc[0]
     raw_df = raw_data[1:]
     raw_df.columns = headers
+    raw_df = raw_df[raw_df.iloc[:,0] != '']
     df_shape = raw_df.shape
     logging.info('File loaded with {} rows and {} columns.'.format(df_shape[0], df_shape[1]))
 
     return raw_df
-
 
 def output_format(input_df, column_names, to_date, to_numeric):
 
@@ -63,13 +63,13 @@ def output_format(input_df, column_names, to_date, to_numeric):
 
     for column in to_date:
         if column in formatted_df.columns:
-            formatted_df[column] = (pd.to_datetime(formatted_df[column])).dt.strftime('%Y/%m/%d')
+            formatted_df[column] = (pd.to_datetime(formatted_df[column])).dt.strftime('%Y-%m-%d')
         else:
             logging.error("The column name '{}' was not found".format(column))
     
     for column in to_numeric:
         if column in formatted_df.columns:
-            formatted_df[column] = (pd.to_numeric(formatted_df[column].str.replace(',', '')).fillna(0))
+            formatted_df[column] = (pd.to_numeric(formatted_df[column].str.replace(',', ''), errors = 'coerce').fillna(0).astype(float))
         else:
             logging.error("The column name '{}' was not found".format(column))
 
@@ -137,23 +137,23 @@ def main():
     #To add: log file | convert xlsx to spreadsheet
 
     logging.basicConfig(level=logging.DEBUG)
-    secrets_file = '' #path to secrets file
+    secrets_file = 'C:/Users/crf005r/Documents/3_GitHub/api_service_secrets.json' #path to secrets file
     output_file_name = 'Master Welchs'
     output_sheet_name = 'master'
 
     config_values = {
         'Analytics': {
-            'file_name': 'Analytics',
-            'sheet_name': 'Raw', 
+            'file_name': 'Google Analytics',
+            'sheet_name': 'Conjunto de datos1', 
             'columns': ['campaña', 'google ads: grupo de anuncios', 'contenido del anuncio', 'fecha', 'ingresos', 'duración de la sesión', 'sesiones', 'usuarios', 'usuarios nuevos', 'rebotes', 'número de visitas a páginas'],
             'columns_to_date': ['fecha'],
-            'columns_to_numeric': ['ingresos', 'sesiones', 'usuarios', 'usuarios nuevos', 'rebotes', 'número de visitas a páginas'],
+            'columns_to_numeric': ['ingresos', 'sesiones', 'usuarios', 'usuarios nuevos', 'rebotes', 'número de visitas a páginas','duración de la sesión'],
             'skip_rows': 0,
             'output_sheet_name': 'analytics'
             },
         'Google Ads': {
             'file_name': 'Google Ads Plataforma',
-            'sheet_name': 'Raw',
+            'sheet_name': 'Google Ads Plataforma',
             'columns': ['campaña','grupo de anuncios','día','moneda','clics','impresiones','costo','vistas'],
             'columns_to_date': ['día'],
             'columns_to_numeric': ['clics', 'impresiones', 'costo', 'vistas'],
@@ -184,16 +184,11 @@ def main():
                                  config_values[input_source]['columns'], 
                                  config_values[input_source]['columns_to_date'],
                                  config_values[input_source]['columns_to_numeric'])
-
-    write_to_sheets(client, 
-                    output_file_name, 
-                    config_values[input_source]['output_sheet_name'], 
-                    formatted_df)
     
     master_df = master_format(formatted_df,
                               config_values[input_source]['columns'],
                               input_source)
-    
+        
     write_to_sheets(client, 
                     output_file_name, 
                     output_sheet_name, 
