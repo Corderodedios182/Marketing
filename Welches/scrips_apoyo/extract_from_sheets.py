@@ -51,7 +51,7 @@ def get_sheets_file(client, file_name, sheet_name, skip_rows= 0): #, secrets_fil
     return raw_df
 
 
-def output_format(input_df, columns_file, columns_new, to_date, to_numeric):
+def output_format(input_df, source, columns_file, columns_new, to_date, to_numeric):
 
     # 0. Replace column names data frame
     # 1. Convert headers to lower case
@@ -59,6 +59,8 @@ def output_format(input_df, columns_file, columns_new, to_date, to_numeric):
     # 3. Format columns to date
     # 4. Format columns to numeric and fill NA with 0 
     # 5. Return pandas dataframe
+    
+    input_df["fuente"] = source
     
     zip_iterator = zip(columns_file, columns_new)
     a_dictionary = dict(zip_iterator)
@@ -81,16 +83,11 @@ def output_format(input_df, columns_file, columns_new, to_date, to_numeric):
 
     return formatted_df
 
-def master_format(input_df, column_names, source):
+def master_format(data):
     
-    # 1. Column name mapping definition
-    # 2. Create empty pandas dataframe with standar columns name -> master_df
-    # 3. Column name mappign for input_df
-    # 4. Append values from input_df to master_df
-    # 5. Add column fuente
-    # 6. Return pandas dataframe
-    master_df = []
-
+    master_df = pd.concat(data)
+    master_df = master_df.fillna(0)
+    
     return master_df 
 
 
@@ -122,8 +119,9 @@ def main():
         'Analytics': {
             'file_name': 'Google Analytics',
             'sheet_name': 'Conjunto de datos1', 
-            'columns_file': ["Campaña", "Contenido del anuncio", "Google Ads: grupo de anuncios", "Fecha", "Sesiones", "Usuarios", "Usuarios nuevos", "Rebotes", "Transacciones", "Ingresos", "Duración de la sesión", "Número de visitas a páginas"],
-            'columns_new': ["campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
+            'source':'analytics',
+            'columns_file': ["fuente","Campaña", "Contenido del anuncio", "Google Ads: grupo de anuncios", "Fecha", "Sesiones", "Usuarios", "Usuarios nuevos", "Rebotes", "Transacciones", "Ingresos", "Duración de la sesión", "Número de visitas a páginas"],
+            'columns_new': ["fuente","campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
             'columns_to_date': ['fecha'],
             'columns_to_numeric': ["ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
             'skip_rows': 0,
@@ -132,8 +130,9 @@ def main():
         'Google Ads': {
             'file_name': 'Google Ads Plataforma',
             'sheet_name': 'Google Ads Plataforma',
-            'columns_file': ["Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "Vistas"],
-            'columns_new': ["campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views"],
+            'source':'google ads',
+            'columns_file': ["fuente","Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "Vistas"],
+            'columns_new': ["fuente","campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views"],
             'columns_to_date': ['fecha'],
             'columns_to_numeric': ["clics", "impresiones", "dinero_gastado","views"],
             'skip_rows': 2,
@@ -142,8 +141,9 @@ def main():
         'Facebook': {
             'file_name': 'Facebook',
             'sheet_name': 'Raw',
-            'columns_file': ["Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"],
-            'columns_new': ["plataforma", "campaña", "grupo_de_anuncios", "anuncio", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"],
+            'source':'facebook',
+            'columns_file': ["fuente","Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"],
+            'columns_new': ["fuente","plataforma", "campaña", "grupo_de_anuncios", "anuncio", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"],
             'columns_to_date': ['fecha'],
             'columns_to_numeric': ["clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"],
             'skip_rows': 0,
@@ -151,7 +151,7 @@ def main():
             }
     }
     
-    input_source = ['Analytics','Google Ads','Facebook']
+    input_source = ['Facebook','Google Ads','Analytics']
     data = []
     
     client = get_auth(secrets_file)
@@ -165,15 +165,15 @@ def main():
         
         #les da un adecuado formato a cada archivo#
         formatted_df = output_format(raw_df, 
+                                     config_values[input_source]['source'],
                                      config_values[input_source]['columns_file'], 
                                      config_values[input_source]['columns_new'],
                                      config_values[input_source]['columns_to_date'],
                                      config_values[input_source]['columns_to_numeric'])
         
         data.append(formatted_df)
-            
     
-    master_df = master_format(formatted_df)
+    master_df = master_format(data)
         
     write_to_sheets(client, 
                     output_file_name, 
