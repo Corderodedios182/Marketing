@@ -151,22 +151,27 @@ def main():
             }
     }
     
-    input_source = ['Facebook']
-
+    input_source = ['Analytics','Google Ads','Facebook']
+    data = []
+    
     client = get_auth(secrets_file)
 
-    raw_df = get_sheets_file(client, 
-                             config_values[input_source]['file_name'], 
-                             config_values[input_source]['sheet_name'], 
-                             config_values[input_source]['skip_rows'])
-    
-    #les da un adecuado formato a cada archivo#
-    formatted_df = output_format(raw_df, 
-                                 config_values[input_source]['columns_file'], 
-                                 config_values[input_source]['columns_new'],
-                                 config_values[input_source]['columns_to_date'],
-                                 config_values[input_source]['columns_to_numeric'])
-    
+    for input_source in input_source:
+        
+        raw_df = get_sheets_file(client, 
+                                 config_values[input_source]['file_name'], 
+                                 config_values[input_source]['sheet_name'], 
+                                 config_values[input_source]['skip_rows'])
+        
+        #les da un adecuado formato a cada archivo#
+        formatted_df = output_format(raw_df, 
+                                     config_values[input_source]['columns_file'], 
+                                     config_values[input_source]['columns_new'],
+                                     config_values[input_source]['columns_to_date'],
+                                     config_values[input_source]['columns_to_numeric'])
+        
+        data.append(formatted_df)
+            
     
     master_df = master_format(formatted_df)
         
