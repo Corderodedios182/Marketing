@@ -50,16 +50,22 @@ def get_sheets_file(client, file_name, sheet_name, skip_rows= 0): #, secrets_fil
 
     return raw_df
 
-def output_format(input_df, column_names, to_date, to_numeric):
 
+def output_format(input_df, columns_file, columns_new, to_date, to_numeric):
+
+    # 0. Replace column names data frame
     # 1. Convert headers to lower case
     # 2. Select columns
     # 3. Format columns to date
     # 4. Format columns to numeric and fill NA with 0 
     # 5. Return pandas dataframe
+    
+    zip_iterator = zip(columns_file, columns_new)
+    a_dictionary = dict(zip_iterator)
+    input_df.rename(columns=a_dictionary, inplace=True)
 
     input_df.columns = map(str.lower, input_df.columns)
-    formatted_df = input_df.loc[:, column_names]
+    formatted_df = input_df.loc[:, columns_new]
 
     for column in to_date:
         if column in formatted_df.columns:
@@ -74,6 +80,18 @@ def output_format(input_df, column_names, to_date, to_numeric):
             logging.error("The column name '{}' was not found".format(column))
 
     return formatted_df
+
+def master_format(input_df, column_names, source):
+    
+    # 1. Column name mapping definition
+    # 2. Create empty pandas dataframe with standar columns name -> master_df
+    # 3. Column name mappign for input_df
+    # 4. Append values from input_df to master_df
+    # 5. Add column fuente
+    # 6. Return pandas dataframe
+    master_df = []
+
+    return master_df 
 
 
 def write_to_sheets(client, file_name, sheet_name, input_df):
@@ -91,47 +109,6 @@ def write_to_sheets(client, file_name, sheet_name, input_df):
         logging.exception('The following error happend while trying to write: ')
         exit(1)
 
-def master_format(input_df, column_names, source):
-    
-    # 1. Column name mapping definition
-    # 2. Create empty pandas dataframe with standar columns name -> master_df
-    # 3. Column name mappign for input_df
-    # 4. Append values from input_df to master_df
-    # 5. Add column fuente
-    # 6. Return pandas dataframe
-
-    columns_map = {
-        'fuente': [],
-        'campaña': ['nombre de la campaña'],
-        'grupo_de_anuncios': ['grupo de anuncios', 'nombre del conjunto de anuncios'],
-        'anuncio': ['nombre del anuncio'],
-        'fecha': ['fecha', 'día'],
-        'moneda': ['divisa'],
-        'clics': ['clics en el enlace'],
-        'impresiones': [],
-        'dinero_gastado': ['importe gastado (mxn)', 'costo', 'ingresos'],
-        'duracion_sesion': ['duración de la sesión'],
-        'sesiones': [],
-        'usuarios': [],
-        'usuarios_nuevos': ['usuarios nuevos'],
-        'rebotes': [],
-        'vistas': ['reproducciones de video hasta el 100%', 'vistas'],
-        'visitas': ['número de visitas a páginas'] 
-            }
-    
-    master_df = pd.DataFrame(columns= columns_map.keys())
-    
-    for column_name in input_df.columns:
-        if column_name not in columns_map.keys():
-            for item in columns_map.items():
-                if column_name in item[1]:
-                    input_df.rename(columns={column_name: item[0]}, inplace= True)
-
-    master_df = master_df.append(input_df, sort= True)
-    master_df['fuente'] = source
-
-    return master_df 
-
 def main():
     #To fix: the file must have headers for the 1st run
     #To add: log file | convert xlsx to spreadsheet
@@ -145,33 +122,36 @@ def main():
         'Analytics': {
             'file_name': 'Google Analytics',
             'sheet_name': 'Conjunto de datos1', 
-            'columns': ['campaña', 'google ads: grupo de anuncios', 'contenido del anuncio', 'fecha', 'ingresos', 'duración de la sesión', 'sesiones', 'usuarios', 'usuarios nuevos', 'rebotes', 'número de visitas a páginas'],
+            'columns_file': ["Campaña", "Contenido del anuncio", "Google Ads: grupo de anuncios", "Fecha", "Sesiones", "Usuarios", "Usuarios nuevos", "Rebotes", "Transacciones", "Ingresos", "Duración de la sesión", "Número de visitas a páginas"],
+            'columns_new': ["campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
             'columns_to_date': ['fecha'],
-            'columns_to_numeric': ['ingresos', 'sesiones', 'usuarios', 'usuarios nuevos', 'rebotes', 'número de visitas a páginas','duración de la sesión'],
+            'columns_to_numeric': ["ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
             'skip_rows': 0,
             'output_sheet_name': 'analytics'
             },
         'Google Ads': {
             'file_name': 'Google Ads Plataforma',
             'sheet_name': 'Google Ads Plataforma',
-            'columns': ['campaña','grupo de anuncios','día','moneda','clics','impresiones','costo','vistas'],
-            'columns_to_date': ['día'],
-            'columns_to_numeric': ['clics', 'impresiones', 'costo', 'vistas'],
+            'columns_file': ["Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "Vistas"],
+            'columns_new': ["campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views"],
+            'columns_to_date': ['fecha'],
+            'columns_to_numeric': ["clics", "impresiones", "dinero_gastado","views"],
             'skip_rows': 2,
             'output_sheet_name': 'google_ads'
             },
         'Facebook': {
             'file_name': 'Facebook',
             'sheet_name': 'Raw',
-            'columns': ['nombre de la campaña', 'nombre del conjunto de anuncios', 'nombre del anuncio', 'día', 'impresiones', 'divisa', 'importe gastado (mxn)', 'clics en el enlace', 'alcance', 'reproducciones de video hasta el 100%', 'interacción con una publicación'],
-            'columns_to_date': ['día'],
-            'columns_to_numeric': ['impresiones', 'importe gastado (mxn)', 'clics en el enlace', 'alcance', 'reproducciones de video hasta el 100%', 'interacción con una publicación'],
+            'columns_file': ["Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"],
+            'columns_new': ["plataforma", "campaña", "grupo_de_anuncios", "anuncio", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"],
+            'columns_to_date': ['fecha'],
+            'columns_to_numeric': ["clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"],
             'skip_rows': 0,
             'output_sheet_name': 'facebook'
             }
     }
     
-    input_source = 'Google Ads'
+    input_source = ['Facebook']
 
     client = get_auth(secrets_file)
 
@@ -179,15 +159,16 @@ def main():
                              config_values[input_source]['file_name'], 
                              config_values[input_source]['sheet_name'], 
                              config_values[input_source]['skip_rows'])
-
+    
+    #les da un adecuado formato a cada archivo#
     formatted_df = output_format(raw_df, 
-                                 config_values[input_source]['columns'], 
+                                 config_values[input_source]['columns_file'], 
+                                 config_values[input_source]['columns_new'],
                                  config_values[input_source]['columns_to_date'],
                                  config_values[input_source]['columns_to_numeric'])
     
-    master_df = master_format(formatted_df,
-                              config_values[input_source]['columns'],
-                              input_source)
+    
+    master_df = master_format(formatted_df)
         
     write_to_sheets(client, 
                     output_file_name, 
