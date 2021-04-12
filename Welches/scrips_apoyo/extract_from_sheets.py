@@ -189,7 +189,7 @@ def main():
             'sheet_name': 'Conjunto de datos1', 
             'source':'analytics',
             'columns_file': ["fuente","Campaña", "Contenido del anuncio", "Google Ads: grupo de anuncios", "Fecha", "Sesiones", "Usuarios", "Usuarios nuevos", "Rebotes", "Transacciones", "Ingresos", "Duración de la sesión", "Número de visitas a páginas"],
-            'columns_new': ["fuente","campaña", "grupo_de_anuncios", "anuncio", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
+            'columns_new': ["fuente","campaña", "anuncio", "grupo_de_anuncios", "fecha", "ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
             'columns_to_date': ['fecha'],
             'columns_to_numeric': ["ingresos", "duracion_sesion", "sesiones", "usuarios", "usuarios_nuevos", "rebotes","paginas_vistas"],
             'skip_rows': 0,
