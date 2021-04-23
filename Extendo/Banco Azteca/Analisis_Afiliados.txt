@@ -1,0 +1,48 @@
+--1. Identifaciacion de Campos
+
+SELECT 
+--campos categoricos
+media_source, 
+af_prt,
+--campos fechas
+fecha,
+event_time,
+event_time_selected_timezone, --me deja filtrar por rango de tiempo
+device_download_time,
+attributed_touch_time_selected_timezone, --Atributed_Touch_Type_Selected_Timezone (Atribución similar a click)
+install_time_selected_timezone, --Install Time Selected Timezone (Momento en que se abre por primera vez la app)
+install_time,
+device_download_time_selected_timezone, --Device Download Time Selected Zone (Posible evento de instalación)
+attributed_touch_time,
+FROM `bancoazteca-master-hub.appsflyer_data.appsflyer_events_data` 
+--rango de tiempo
+WHERE DATE(event_time_selected_timezone) = "2021-04-21" 
+LIMIT 1000
+
+--
+
+-- Etiquetando los datos
+
+SELECT 
+--campos categoricos
+media_source, 
+af_prt,
+--calculado
+CASE 
+WHEN REGEXP_CONTAINS(media_source, "ACAI") THEN "prueba" END,
+--campos fechas
+fecha,
+event_time,
+event_time_selected_timezone, --me deja filtrar por rango de tiempo
+device_download_time,
+attributed_touch_time_selected_timezone, --Atributed_Touch_Type_Selected_Timezone (Atribución similar a click)
+install_time_selected_timezone, --Install Time Selected Timezone (Momento en que se abre por primera vez la app)
+install_time,
+device_download_time_selected_timezone, --Device Download Time Selected Zone (Posible evento de instalación)
+attributed_touch_time,
+FROM `bancoazteca-master-hub.appsflyer_data.appsflyer_events_data` 
+--rango de tiempo
+--WHERE DATE(event_time_selected_timezone) = "2021-04-21" AND 
+where media_source = 'ACAI'
+LIMIT 10
+
