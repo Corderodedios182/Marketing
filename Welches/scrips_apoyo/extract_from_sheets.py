@@ -149,7 +149,7 @@ def master_format(facebook, google_ads, analytics):
     tmp_2.columns = cols
     
     tmp_3 = master_df.loc[:,'anuncio'].str.split("-",20,expand = True)
-    cols = ["tipo_audiencia", "nombre_audiencia", "formato", "creativo", "dimension"]
+    cols = ["tipo_audiencia", "nombre_audiencia", "formato", "creativo", "dimension","concatenar","concatenar","concatenar"]
     tmp_3.columns = cols
     
     master_df = pd.concat([tmp_1,tmp_2,tmp_3,master_df], axis = 1)
@@ -179,9 +179,9 @@ def main():
     #To add: log file | convert xlsx to spreadsheet
 
     logging.basicConfig(level=logging.DEBUG)
-    secrets_file = 'C:/Users/crf005r/Documents/3_GitHub/api_service_secrets.json' #path to secrets file
+    secrets_file = '' #path to secrets file
     output_file_name = 'Master Welchs'
-    output_sheet_name = 'master_2'
+    output_sheet_name = 'master'
 
     config_values = {
         'Analytics': {
@@ -197,7 +197,7 @@ def main():
             },
         'Google Ads': {
             'file_name': 'Google Ads Plataforma',
-            'sheet_name': 'Google Ads Plataforma',
+            'sheet_name': 'Raw',
             'source':'google ads',
             'columns_file': ["fuente","Campaña", "Grupo de anuncios", "Día", "Moneda", "Clics", "Impresiones", "Costo", "Vistas"],
             'columns_new': ["fuente","campaña", "grupo_de_anuncios", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views"],
@@ -210,8 +210,8 @@ def main():
             'file_name': 'Facebook',
             'sheet_name': 'Raw',
             'source':'facebook',
-            'columns_file': ["fuente","Plataforma", "Nombre de la campaña", "Nombre del conjunto de anuncios", "Nombre del anuncio", "Día", "Divisa", "Clics en el enlace", "Impresiones", "Importe gastado (MXN)", "Reproducciones de video hasta el 100%", "Interacción con una publicación", "Alcance"],
-            'columns_new': ["fuente","plataforma_reporte", "campaña", "grupo_de_anuncios", "anuncio", "fecha", "moneda", "clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"],
+            'columns_file': ["fuente","Nombre de la campaña","Nombre del conjunto de anuncios","Nombre del anuncio","Plataforma","Día","Impresiones","Importe gastado (MXN)","Alcance","Clics en el enlace","Reproducciones de video hasta el 100%"	,"Interacción con una publicación","Inicio del informe","Fin del informe"],
+            'columns_new': ["fuente","campaña","grupo_de_anuncios","anuncio","plataforma_reporte","fecha","impresiones","dinero_gastado","alcance","clics","views","interacciones","inicio_informe","fin_informe"],
             'columns_to_date': ['fecha'],
             'columns_to_numeric': ["clics", "impresiones", "dinero_gastado","views", "interacciones","alcance"],
             'skip_rows': 0,
@@ -243,6 +243,7 @@ def main():
     
     #realiza las transformaciones y uniones de los datos
     master_df = master_format(facebook = data[0], google_ads = data[1], analytics = data[2])
+    master_df = master_df.loc[:,~master_df.columns.str.contains("concatenar")]
     
     master_df.to_csv('master_2_python.csv')
     
